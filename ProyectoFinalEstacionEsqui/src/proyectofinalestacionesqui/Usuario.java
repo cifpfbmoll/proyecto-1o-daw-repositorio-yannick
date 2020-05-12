@@ -5,8 +5,14 @@
  */
 package proyectofinalestacionesqui;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -33,7 +39,16 @@ public class Usuario implements PistasEsqui{
     }
 
     public void setDni(String dni) {
-        this.dni = dni;
+        boolean dniValido = comprobarDni(dni);
+        if(dniValido){
+            this.dni = dni;
+        }
+        else{
+            System.out.println("hola");
+        }
+        //this.dni = dni;
+         
+
     }
 
     public String getNombre() {
@@ -88,4 +103,42 @@ public class Usuario implements PistasEsqui{
         }
         return nomApFinal;
     }
+    
+    public boolean comprobarDni(String dni){
+        if(dni=="0"){
+             return true;
+        }
+        try(BufferedReader lectorMejorado = new BufferedReader(new FileReader(dni));) {
+            String lineaLeida = lectorMejorado.readLine();
+            int j = 0;
+            while (lineaLeida != null) {
+                char c = lineaLeida.charAt(j);
+                if (j<9) {
+                    if(!Character.isDigit(c)){
+                        return false;
+                    }
+                }
+                if(j==9){
+                    if(!Character.isLetter(c)){
+                        return false;
+                    }
+                }
+                j++;
+                if(j==10){
+                    return true;
+                }
+            }
+            
+        } catch (FileNotFoundException ex) {
+            System.out.println("Error, el archivo de origen no existe");
+        } catch (IOException ex) {
+            System.out.println("Error al leer el archivo");
+            System.out.println(ex.getMessage());
+        }
+        return false;
+    }
+    
+    /*public boolean comprobarFecha(String fecha){
+        
+    }*/
 }

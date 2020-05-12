@@ -1,0 +1,18 @@
+---- Datos Usuario ----
+Identificador: 19 (necesario para identificarte)
+DNI: sin DNI
+Nombre: Q
+Apellidos: Q
+Fecha de nacimiento: 21/05/1993---- Datos Usuario ----
+Identificador: 22 (necesario para identificarte)
+DNI: sin DNI
+Nombre: Q
+Apellidos: Q
+Fecha de nacimiento: 21/05/1993Hora y fecha: 15:50:33 12/05/2020
+---- Datos Usuario ----
+Identificador: 23 (necesario para identificarte)
+DNI: sin DNI
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 15:53:10 12/05/2020
