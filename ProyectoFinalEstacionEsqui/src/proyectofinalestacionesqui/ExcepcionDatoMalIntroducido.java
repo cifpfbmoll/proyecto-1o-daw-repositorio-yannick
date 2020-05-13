@@ -16,7 +16,7 @@ public class ExcepcionDatoMalIntroducido extends Exception{
     }
 
     public ExcepcionDatoMalIntroducido(String datoMalIntroducido) {
-        this.mensaje = "Has introducido mal el " + datoMalIntroducido;
+        this.mensaje = "Has introducido mal " + datoMalIntroducido;
     }
 
     public String getMensaje() {
