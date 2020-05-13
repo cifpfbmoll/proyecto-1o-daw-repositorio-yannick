@@ -44,7 +44,11 @@ public class Usuario implements PistasEsqui{
             this.dni = dni;
         }
         else{
-            System.out.println("hola");
+            try {
+                throw new ExcepcionDatoMalIntroducido("DNI");
+            } catch (ExcepcionDatoMalIntroducido ex) {
+                System.out.println(ex.getMensaje());
+            }
         }
         //this.dni = dni;
          
@@ -105,37 +109,27 @@ public class Usuario implements PistasEsqui{
     }
     
     public boolean comprobarDni(String dni){
+        boolean resultadoComprobado = false;
         if(dni=="0"){
-             return true;
+             resultadoComprobado = true;
         }
-        try(BufferedReader lectorMejorado = new BufferedReader(new FileReader(dni));) {
-            String lineaLeida = lectorMejorado.readLine();
-            int j = 0;
-            while (lineaLeida != null) {
-                char c = lineaLeida.charAt(j);
-                if (j<9) {
-                    if(!Character.isDigit(c)){
-                        return false;
-                    }
-                }
-                if(j==9){
-                    if(!Character.isLetter(c)){
-                        return false;
-                    }
-                }
-                j++;
-                if(j==10){
-                    return true;
+        else{
+            int sumadorDigitos = 0;
+            boolean ultimoLetra = false;
+            for(int i=0;i<8;i++){
+                char c = dni.charAt(i);
+                if(Character.isDigit(c)){
+                    sumadorDigitos++;
                 }
             }
-            
-        } catch (FileNotFoundException ex) {
-            System.out.println("Error, el archivo de origen no existe");
-        } catch (IOException ex) {
-            System.out.println("Error al leer el archivo");
-            System.out.println(ex.getMessage());
+            if(Character.isLetter(dni.charAt(8))){
+                ultimoLetra = true;
+            }
+            if(sumadorDigitos==9&&ultimoLetra){
+                resultadoComprobado = true;
+            }
         }
-        return false;
+        return resultadoComprobado;
     }
     
     /*public boolean comprobarFecha(String fecha){

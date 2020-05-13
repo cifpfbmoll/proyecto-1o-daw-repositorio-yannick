@@ -124,7 +124,7 @@ public class ProyectoFinalEstacionEsqui {
             e.printStackTrace();
         }finally {
             try {
-                            //Cierra instancias de FileWriter y BufferedWriter
+                //Cierra instancias de FileWriter y BufferedWriter
                 if (bw != null)
                     bw.close();
                 if (fw != null)
