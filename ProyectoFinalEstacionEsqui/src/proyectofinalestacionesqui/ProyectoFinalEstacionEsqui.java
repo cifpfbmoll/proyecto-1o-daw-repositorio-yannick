@@ -57,7 +57,7 @@ public class ProyectoFinalEstacionEsqui {
             System.out.println("1- Crear usuario");
             System.out.println("2- Comprar forfaits");
             System.out.println("3- Alquilar material de esquí/snow");
-            System.out.println("3- Alquilar profesor de esqui/snow");
+            System.out.println("4- Devolver material de esquí/snow");
             System.out.println("4- Consultar información de las pistas");
             System.out.println("5- Consultar rutas por dificultad");
             System.out.println("6- Salir");
@@ -77,6 +77,9 @@ public class ProyectoFinalEstacionEsqui {
                     break;
                 case 3:
                     alquilarMaterial();
+                    break;
+                case 4:
+                    devolverMaterial();
                     break;
                 case 9:
                     SeguirMostrandoMenu = true;
@@ -729,7 +732,7 @@ public class ProyectoFinalEstacionEsqui {
                     stPasarNoDisp.setString(1,idMaterialEncontrado);
                     boolean n = stPasarNoDisp.execute();
                     //Y guardamos la operacion en la tabla intermedia
-                    stGuarMatCli = con.prepareStatement(strGuarMatCli, Statement.RETURN_GENERATED_KEYS);
+                    stGuarMatCli = con.prepareStatement(strGuarMatCli);
                     stGuarMatCli.setString(1, idMaterialEncontrado);
                     stGuarMatCli.setInt(2, idCliente);
                     stGuarMatCli.setInt(3, diasAlquilerMaterial - 1);
@@ -740,7 +743,26 @@ public class ProyectoFinalEstacionEsqui {
                     con.commit();//Hacemos commit para que se hagan las 2 operaciones o ninguna
                     System.out.println("Se ha alquilado con exito "+material.getNombreTipoMaterial()+"!");
                     
+                    //Imprimimos ticket
+                    PreparedStatement stBuscarMaterialImpr = con.prepareStatement("select DATE_FORMAT(fecha_hora_inicio, '%d/%m/%Y %H:%i:%s') as fecha_hora_inicio, DATE_FORMAT(fecha_hora_fin, '%d/%m/%Y %H:%i:%s') as fecha_hora_fin from material_cliente where id_material = ? and id_cliente = ? order by fecha_hora_inicio desc");
+                    stBuscarMaterialImpr.setString(1, idMaterialEncontrado);
+                    stBuscarMaterialImpr.setInt(2, idCliente);
+                    ResultSet rsBuscarMaterialImpr = stBuscarMaterialImpr.executeQuery();
+                    rsBuscarMaterialImpr.next();
+                    String fechaHoraInicio = rsBuscarMaterialImpr.getString("fecha_hora_inicio");
+                    String fechaHoraFin = rsBuscarMaterialImpr.getString("fecha_hora_fin");
+                    System.out.println("----Ticket----");
+                    System.out.println("Material alquilado: "+material.getNombreTipoMaterial());
+                    System.out.println("Talla: "+material.getTalla());
+                    System.out.println("Id del material: "+idMaterialEncontrado);
+                    System.out.println("Id del cliente: "+idCliente);
+                    System.out.println("Fecha y hora inicio: "+fechaHoraInicio);
+                    System.out.println("Fecha y hora fin: "+fechaHoraFin);
+                    System.out.println("Precio: "+(precioMaterialEncontrado*diasAlquilerMaterial)+"€");
                     
+                    stBuscarMaterialImpr.close();
+                    rsBuscarMaterialImpr.close();
+                    /*
                     //opcion1
                     //Imprimimos tiket
                     ResultSet rsDevolverValoresInsertados = stGuarMatCli.getGeneratedKeys();
@@ -758,6 +780,7 @@ public class ProyectoFinalEstacionEsqui {
                     int updateCnt = callStmt.executeUpdate();
                     Timestamp fechaHoraInicio2 = callStmt.getTimestamp(1);
                     System.out.println("The id of the inserted row is: " + fechaHoraInicio2);
+                    */
                     
                     
                 } catch (SQLException ex) {
@@ -783,6 +806,34 @@ public class ProyectoFinalEstacionEsqui {
         else{
             System.out.println("No existe " +material.getNombreTipoMaterial()+ " para la talla "+material.getTalla());
         }
+        stBuscarMaterial.close();
+        rsBuscarMaterial.close();
+    }
+    
+    public static void devolverMaterial() throws SQLException{
+        Scanner lector = new Scanner(System.in);
+        System.out.println("\n----Devolver material----");
+        System.out.println("Dime el id del material, lo encontraras en el tiket o escrito en tu material");
+        String idMaterial = lector.next();
+        
+        //Comprobamos que toque devolver el material hoy
+        Connection con = establecerConexion();
+        PreparedStatement stBuscarMaterial = con.prepareStatement("select id from material where id = ? and disponibilidad = false");
+        stBuscarMaterial.setString(1, idMaterial);
+        ResultSet rsBuscarMaterial = stBuscarMaterial.executeQuery();
+        
+        //Si encuentra el id de la tabla y disponibilidad es false
+        if (rsBuscarMaterial.next()){
+            String strPasarDisp = "UPDATE material SET disponibilidad = true WHERE id = ?";
+            PreparedStatement stPasarDisp = con.prepareStatement(strPasarDisp);
+            stPasarDisp.setString(1,idMaterial);
+            boolean n = stPasarDisp.execute();
+        }
+        else{
+            System.out.println("No se ha encontrado el id del material");
+        }
+        
+        //SELECT DATEDIFF(hour, '2017/08/25', '2011/08/25') AS DateDiff;
     }
 }
 
