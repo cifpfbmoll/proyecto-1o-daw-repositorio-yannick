@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -20,9 +21,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import static java.util.Calendar.HOUR;
 import java.util.Date;
+import static jdk.nashorn.internal.runtime.regexp.joni.constants.TokenType.INTERVAL;
 
 /**
  *
@@ -51,7 +56,7 @@ public class ProyectoFinalEstacionEsqui {
             System.out.println("\n---- Menu principal ----");
             System.out.println("1- Crear usuario");
             System.out.println("2- Comprar forfaits");
-            System.out.println("2- Alquilar material de esquí/snow");
+            System.out.println("3- Alquilar material de esquí/snow");
             System.out.println("3- Alquilar profesor de esqui/snow");
             System.out.println("4- Consultar información de las pistas");
             System.out.println("5- Consultar rutas por dificultad");
@@ -70,12 +75,17 @@ public class ProyectoFinalEstacionEsqui {
                 case 2:
                     comprarForfaits();
                     break;
+                case 3:
+                    alquilarMaterial();
+                    break;
                 case 9:
                     SeguirMostrandoMenu = true;
                     break;
             }
         }    
     }
+
+    
     
     /**
      * Con este metodo creamos los usuarios, en este metodo ultizamos los metodos 
@@ -513,6 +523,266 @@ public class ProyectoFinalEstacionEsqui {
         DateFormat hourdateFormat = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy");
         System.out.println("Fecha y hora: "+hourdateFormat.format(date));
         System.out.println("Precio: "+precioForfait+"€");
+    }
+    
+    public static void alquilarMaterial() throws SQLException {
+        Scanner lector = new Scanner(System.in);
+        int idCliente = autentificarUsuario();
+        if(idCliente!=0){
+            System.out.println("----Alquilar material----");
+            System.out.println("Que desea alquilar material de esquí o de snow? (escriba esqui o snow)");
+            String tipoMaterial = lector.next();
+            if(tipoMaterial.equalsIgnoreCase("snow")){
+                System.out.println("Que desea alquilar tabla(15€) o botas de snow(20€)? (escriba tabla o botas)");
+                String tablaOBotas = lector.next();
+                if(tablaOBotas.equalsIgnoreCase("tabla")){
+                    System.out.println("Dime tu altura en cm");
+                    int altura = lector.nextInt();
+                    System.out.println("Dime tu peso en kg");
+                    int peso = lector.nextInt();
+                    //Calculamos la talla de la tabla
+
+                    //La tabla deve medir la altura menos 25cm
+                    altura -= 25;
+                    int tallaTabla = altura;
+
+                    //Cada 5 kg a partir de 70kg es una talla mas
+                    if(peso>70){
+                        int pesoSobrante = peso-70;
+                        for(int i=5;i<=pesoSobrante;i+=5){
+                            tallaTabla++;
+                        }
+                    }
+                    System.out.println("Dime para cuantos dias deseas alquilar la tabla");
+                    int diasAlquilerMaterial = lector.nextInt();
+                    Material material = new Material(tallaTabla,"tabla","tabla de snow");
+                    buscarAlquilarMaterial(material, idCliente, diasAlquilerMaterial);
+                }
+                else if(tablaOBotas.equalsIgnoreCase("botas")){
+                    System.out.println("Dime tu talla de botas");
+                    int tallaBotasSnow = lector.nextInt();
+                    System.out.println("Dime para cuantos dias deseas alquilar las botas de snow");
+                    int diasAlquilerMaterial = lector.nextInt();
+                    Material material = new Material(tallaBotasSnow,"botas_snow","botas de snow");
+                    buscarAlquilarMaterial(material, idCliente, diasAlquilerMaterial);
+                }
+                else{
+                    System.out.println("Por favor escribe tabla o botas");
+                }
+            }
+            else if(tipoMaterial.equalsIgnoreCase("esqui")){
+                System.out.println("Que desea alquilar esquis(10€) o botas de esqui(15€)? (escriba esquis o botas)");
+                String tablaOBotas = lector.next();
+                if(tablaOBotas.equalsIgnoreCase("esquis")){
+                    System.out.println("Dime tu altura en cm");
+                    int altura = lector.nextInt();
+                    System.out.println("Dime tu peso en kg");
+                    int peso = lector.nextInt();
+                    //Calculamos la talla de los esquis
+
+                    //Los esquis deven medir la altura de la persona
+                    int tallaEsquis = altura;
+
+                    //Cada 5 kg a partir de 70kg es una talla mas
+                    if(peso>70){
+                        int pesoSobrante = peso-70;
+                        for(int i=5;i<=pesoSobrante;i+=5){
+                            tallaEsquis++;
+                        }
+                    }
+                    System.out.println("Dime para cuantos dias deseas alquilar los esquis");
+                    int diasAlquilerMaterial = lector.nextInt();
+                    Material material = new Material(tallaEsquis,"esquis","esquis");
+                    buscarAlquilarMaterial(material, idCliente, diasAlquilerMaterial);
+                }
+                else if(tablaOBotas.equalsIgnoreCase("botas")){
+                    System.out.println("Dime tu talla de botas");
+                    int tallaBotasEsqui = lector.nextInt();
+                    System.out.println("Dime para cuantos dias deseas alquilar las botas de esqui");
+                    int diasAlquilerMaterial = lector.nextInt();
+                    Material material = new Material(tallaBotasEsqui,"botas_esqui","botas de esqui");
+                    buscarAlquilarMaterial(material, idCliente, diasAlquilerMaterial);
+                }
+                else{
+                    System.out.println("Por favor escribe esquis o botas");
+                }
+            }
+            else{
+                System.out.println("Por favor escribe esqui o snow");
+            }
+        }
+        else{
+            System.out.println("No te has identificado correctamente");
+        }
+        
+    }
+
+    public static int autentificarUsuario() throws SQLException {
+        Scanner lector = new Scanner(System.in);
+        int idCliente = 0;
+        System.out.println("----Autentificar usuario----");
+        System.out.println("Tienes DNI? (escribe Si o No)");
+        String opcionDNI = lector.nextLine();
+        //Si tiene DNI
+        if(opcionDNI.equalsIgnoreCase("si")){
+            System.out.println("Dime tu DNI con este formato 12345678Q");
+            String dniStr = lector.nextLine();
+            boolean dniValido = comprobarDni(dniStr);
+            System.out.println("Dime tu fecha de nacimiento con el siguiente formato dd/mm/aaaa ej 01/01/1990");
+            String fechaStr = lector.nextLine();
+            boolean fechaValida = comprobarFechaNacimiento(fechaStr);
+            //Si el dni i la fecha de nacimiento tiene el formato valido
+            if(dniValido && fechaValida){
+                //Buscamos que el usuario esté en la base de datos
+                Connection con = establecerConexion();
+                PreparedStatement stComprUs = con.prepareStatement("select id from clientes where dni = ? and fecha_nacimiento = str_to_date(?,'%d/%m/%Y')");
+                stComprUs.setString(1, dniStr); 
+                stComprUs.setString(2, fechaStr); 
+                ResultSet rsComprUs = stComprUs.executeQuery();
+                //Si hay resultados es que el usuario esta dado de alta
+                if (rsComprUs.next()){
+                    //Cojemos el id del usuario y lo retornamos al final del codigo
+                    idCliente = rsComprUs.getInt ("id");
+                }
+                //Si no da resultados es que no esta en la base de datos, imprimimos mensaje informando
+                else{
+                    System.out.println("Parece ser que tu usuario no esta registrado");
+                }
+
+                if (rsComprUs!= null) rsComprUs.close (); //cierra el objeto ResultSet llamado rsComprUs
+                if (stComprUs!= null) stComprUs.close ();//cierra el objeto Statement llamado stComprUs
+                if (con!= null) con.close (); //cierra el objeto Connection llamado con*/
+            }
+            //Si dni o fecha no tienen el formato adecuado imprimimos mensaje
+            else{
+                System.out.println("El DNI o la fecha no tienen el formato adecuado");
+            }
+        }
+        //Si no tienen DNI hacemos las operaciones con el id de usuario
+        else if(opcionDNI.equalsIgnoreCase("no")){
+            System.out.println("Dime tu identificador");
+            int identInt = lector.nextInt();
+            System.out.println("Dime tu fecha de nacimiento con el siguiente formato dd/mm/aaaa ej 01/01/1990");
+            String fechaStr = lector.next();
+            boolean fechaValida = comprobarFechaNacimiento(fechaStr);
+            //Si la fecha de nacimiento tiene el formato valido
+            if(fechaValida){
+                Connection con = establecerConexion();
+                PreparedStatement stComprUs = con.prepareStatement("select id from clientes where id = ? and fecha_nacimiento = str_to_date(?,'%d/%m/%Y')");
+                stComprUs.setInt(1, identInt); 
+                stComprUs.setString(2, fechaStr); 
+                ResultSet rsComprUs = stComprUs.executeQuery();
+                //Si hay resultados es que el usuario esta dado de alta
+                if (rsComprUs.next()){
+                    //Guardamos su id en la variable que retornamos al final
+                    idCliente = identInt;
+                }
+                //Si no da resultados es que no esta en la base de datos, imprimimos mensaje informando
+                else{
+                    System.out.println("Parece ser que tu usuario no esta registrado");
+                }
+
+                if (rsComprUs!= null) rsComprUs.close (); //cierra el objeto ResultSet llamado rsComprUs
+                if (stComprUs!= null) stComprUs.close ();//cierra el objeto Statement llamado stComprUs
+                if (con!= null) con.close (); //cierra el objeto Connection llamado con*/
+            }
+            //Si la fecha no tienen el formato adecuado imprimimos mensaje
+            else{
+                System.out.println("La fecha no tiene el formato adecuado");
+            }
+        }
+        //Si no han escrito si o no a si tienen DNI mostramos mensaje
+        else{
+            System.out.println("No has escrito Si o No");
+        }  
+        
+        return idCliente;
+    }
+
+    public static void buscarAlquilarMaterial(Material material, int idCliente, int diasAlquilerMaterial) throws SQLException {
+        //Buscamos que el material este en la base de datos
+        Connection con = establecerConexion();
+        PreparedStatement stBuscarMaterial = con.prepareStatement("select id, precio from material where talla = ? and tipo_material = ? and disponibilidad = true");
+        stBuscarMaterial.setInt(1, material.getTalla());
+        stBuscarMaterial.setString(2, material.getTipoMaterial()); 
+        ResultSet rsBuscarMaterial = stBuscarMaterial.executeQuery();
+        
+        //Si hay resultados es que el material esta disponible
+        if (rsBuscarMaterial.next()){
+            Scanner lector = new Scanner(System.in);
+            //Cojemos el id del material encontrado y el precio
+            String idMaterialEncontrado = rsBuscarMaterial.getString("id");
+            double precioMaterialEncontrado = rsBuscarMaterial.getDouble("precio");
+            //Preguntamos si quiere confirmar la operacion
+            System.out.println("Estas a punto de alquilar: "+ material.getNombreTipoMaterial() +". Talla: "+material.getTalla() + ". Dias: "+diasAlquilerMaterial+". Precio total: "+(precioMaterialEncontrado*diasAlquilerMaterial)+"€. Confirmas que quieres alquilar, escribe si o no");
+            String confirmarAlquilar = lector.next();
+            //Si dice que si
+            if (confirmarAlquilar.equalsIgnoreCase("si")){
+                //Lo pasamos a no disponible
+                String strPasarNoDisp = "UPDATE material SET disponibilidad = false WHERE id = ?";
+                PreparedStatement stPasarNoDisp = null;
+                String strGuarMatCli = "INSERT INTO material_cliente VALUES (?, ?, NOW(), DATE_ADD(DATE_ADD(curdate(), INTERVAL 19 HOUR), INTERVAL ? DAY) , ?)";
+                PreparedStatement stGuarMatCli = null;
+                try{   
+                    stPasarNoDisp = con.prepareStatement(strPasarNoDisp);
+                    con.setAutoCommit(false);//Dejamos el autocommit en false ya que queremos se hagan las 2 operaciones o ninguna
+                    stPasarNoDisp.setString(1,idMaterialEncontrado);
+                    boolean n = stPasarNoDisp.execute();
+                    //Y guardamos la operacion en la tabla intermedia
+                    stGuarMatCli = con.prepareStatement(strGuarMatCli, Statement.RETURN_GENERATED_KEYS);
+                    stGuarMatCli.setString(1, idMaterialEncontrado);
+                    stGuarMatCli.setInt(2, idCliente);
+                    stGuarMatCli.setInt(3, diasAlquilerMaterial - 1);
+                    stGuarMatCli.setDouble(4, diasAlquilerMaterial * precioMaterialEncontrado);
+
+                    boolean q = stGuarMatCli.execute();
+                    
+                    con.commit();//Hacemos commit para que se hagan las 2 operaciones o ninguna
+                    System.out.println("Se ha alquilado con exito "+material.getNombreTipoMaterial()+"!");
+                    
+                    
+                    //opcion1
+                    //Imprimimos tiket
+                    /*ResultSet rsDevolverValoresInsertados = stGuarMatCli.getGeneratedKeys();
+                    if(rsDevolverValoresInsertados.next()){
+                        //n=rs.getString("id");
+                        Timestamp fechaHoraInicio = rsDevolverValoresInsertados.getTimestamp("fecha_hora_inicio");
+                        System.out.println(fechaHoraInicio);
+                        System.out.println("\n---- Ticket ----");
+                    }*/
+                    
+                    
+                    /*//opcion2
+                    CallableStatement callStmt = con.prepareCall(strGuarMatCli);
+                    callStmt.registerOutParameter(5, Types.TIMESTAMP);
+                    int updateCnt = callStmt.executeUpdate();
+                    Timestamp fechaHoraInicio2 = callStmt.getTimestamp(1);
+                    System.out.println("The id of the inserted row is: " + fechaHoraInicio2);*/
+                    
+                    
+                } catch (SQLException ex) {
+                    System.out.println("SQLSTATE " + ex.getSQLState() + " SQLMESSAGE " + ex.getMessage());
+                    System.out.println("Hago rollback");
+                    con.rollback();  
+                } finally{
+                    con.setAutoCommit(true);
+                    stPasarNoDisp.close();
+                    stGuarMatCli.close();
+                }
+            }
+            //Si dice que no mostramos mensaje y se acaba el programa
+            else if(confirmarAlquilar.equalsIgnoreCase("no")){
+                System.out.println("Operacion cancelada");
+            }
+            //Si no escribe si o no se lo decimos
+            else{
+                System.out.println("Tienes que escribir si o no");
+            }
+        }
+        //Si no hay resultados mostramos mensaje
+        else{
+            System.out.println("No existe " +material.getNombreTipoMaterial()+ " para la talla "+material.getTalla());
+        }
     }
 }
 
