@@ -743,21 +743,21 @@ public class ProyectoFinalEstacionEsqui {
                     
                     //opcion1
                     //Imprimimos tiket
-                    /*ResultSet rsDevolverValoresInsertados = stGuarMatCli.getGeneratedKeys();
+                    ResultSet rsDevolverValoresInsertados = stGuarMatCli.getGeneratedKeys();
                     if(rsDevolverValoresInsertados.next()){
                         //n=rs.getString("id");
                         Timestamp fechaHoraInicio = rsDevolverValoresInsertados.getTimestamp("fecha_hora_inicio");
                         System.out.println(fechaHoraInicio);
                         System.out.println("\n---- Ticket ----");
-                    }*/
+                    }
                     
                     
-                    /*//opcion2
+                    //opcion2
                     CallableStatement callStmt = con.prepareCall(strGuarMatCli);
                     callStmt.registerOutParameter(5, Types.TIMESTAMP);
                     int updateCnt = callStmt.executeUpdate();
                     Timestamp fechaHoraInicio2 = callStmt.getTimestamp(1);
-                    System.out.println("The id of the inserted row is: " + fechaHoraInicio2);*/
+                    System.out.println("The id of the inserted row is: " + fechaHoraInicio2);
                     
                     
                 } catch (SQLException ex) {
