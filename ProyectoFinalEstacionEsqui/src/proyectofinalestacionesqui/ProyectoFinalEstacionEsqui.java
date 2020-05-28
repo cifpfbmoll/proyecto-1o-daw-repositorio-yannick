@@ -25,6 +25,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import static java.util.Calendar.HOUR;
 import java.util.Date;
 import static jdk.nashorn.internal.runtime.regexp.joni.constants.TokenType.INTERVAL;
@@ -58,9 +59,10 @@ public class ProyectoFinalEstacionEsqui {
             System.out.println("2- Comprar forfaits");
             System.out.println("3- Alquilar material de esquí/snow");
             System.out.println("4- Devolver material de esquí/snow");
-            System.out.println("4- Consultar información de las pistas");
-            System.out.println("5- Consultar rutas por dificultad");
-            System.out.println("6- Salir");
+            System.out.println("5- Consultar información de las pistas");
+            System.out.println("6- Consultar rutas por dificultad");
+            System.out.println("7- Tareas de mantenimiento");
+            System.out.println("8- Salir");
             System.out.println("Dime una opcion");
             int opcion = lector.nextInt();
             switch(opcion){
@@ -81,8 +83,14 @@ public class ProyectoFinalEstacionEsqui {
                 case 4:
                     devolverMaterial();
                     break;
-                case 9:
-                    SeguirMostrandoMenu = true;
+                case 5:
+                    consultarInfoPistas();
+                    break;
+                case 6:
+                    consultarRutasPorDificultad();
+                    break;
+                case 8:
+                    SeguirMostrandoMenu = false;
                     break;
             }
         }    
@@ -814,26 +822,261 @@ public class ProyectoFinalEstacionEsqui {
         Scanner lector = new Scanner(System.in);
         System.out.println("\n----Devolver material----");
         System.out.println("Dime el id del material, lo encontraras en el tiket o escrito en tu material");
-        String idMaterial = lector.next();
+        String idMaterial = lector.next().toLowerCase();
         
-        //Comprobamos que toque devolver el material hoy
+        //Comprobamos que el id del material exista y que efectivamente este alquilado
         Connection con = establecerConexion();
         PreparedStatement stBuscarMaterial = con.prepareStatement("select id from material where id = ? and disponibilidad = false");
         stBuscarMaterial.setString(1, idMaterial);
         ResultSet rsBuscarMaterial = stBuscarMaterial.executeQuery();
         
-        //Si encuentra el id de la tabla y disponibilidad es false
+        //Si encuentra el id del material y disponibilidad es false
         if (rsBuscarMaterial.next()){
-            String strPasarDisp = "UPDATE material SET disponibilidad = true WHERE id = ?";
-            PreparedStatement stPasarDisp = con.prepareStatement(strPasarDisp);
-            stPasarDisp.setString(1,idMaterial);
-            boolean n = stPasarDisp.execute();
+            //Comprovamos cuando toca devolver
+            //Obtenemos la diferencia de dias y horas de la fecha en la cual deveriamos devolver comparado con la fecha actual
+            PreparedStatement stBuscarDiasHorasDevolver = con.prepareStatement("SELECT NOW() AS ahora, TIMESTAMPDIFF(DAY, NOW(), fecha_hora_fin) AS fecha_hora_fin_diff_dias, TIMESTAMPDIFF(HOUR, NOW(), fecha_hora_fin) as fecha_hora_fin_diff_horas from material_cliente where id_material = ? order by fecha_hora_inicio desc");
+            stBuscarDiasHorasDevolver.setString(1, idMaterial);
+            ResultSet rsBuscarDiasHorasDevolver = stBuscarDiasHorasDevolver.executeQuery();
+            rsBuscarDiasHorasDevolver.next();
+            int diffDiasDevolver = rsBuscarDiasHorasDevolver.getInt("fecha_hora_fin_diff_dias");
+            int diffHorasDevolver = rsBuscarDiasHorasDevolver.getInt("fecha_hora_fin_diff_horas");
+            String horaActual = rsBuscarDiasHorasDevolver.getString("ahora");
+            /*System.out.println("dias: "+diffDiasDevolver);
+            System.out.println("horas: "+diffHorasDevolver);
+            System.out.println("Ahora: "+horaActual);*/
+            //Si quedan 3 horas o menos de alquiler mientras no se retrase de la hora de devolucion, lo devolvemos y ya
+            if(diffHorasDevolver<=3 && diffHorasDevolver>=0){
+                aplicarDevolucionMaterial(con, idMaterial, horaActual);
+            }
+            //Si quedan mas de 3 horas, pero es ese mismo dia, le preguntamos si esta seguro que quiere devolver
+            else if(diffHorasDevolver>3 && diffDiasDevolver==0){
+                System.out.println("Todavia te quedan "+diffHorasDevolver+" hora/s para devolver el material. Estas seguro que deseas devolverlo? (escribe si o no)");
+                String confirmarOperacion = lector.next();
+                if(confirmarOperacion.equalsIgnoreCase("si")){
+                    aplicarDevolucionMaterial(con, idMaterial, horaActual);
+                }
+                else if(confirmarOperacion.equalsIgnoreCase("no")){
+                    System.out.println("Devolucion cancelada");
+                }
+                else{
+                    System.out.println("Tienes que escribir si o no, operacion cancelada");
+                }
+            }
+            //Si queda un dia o mas informamos y preguntamos si quiere devolver
+            else if(diffDiasDevolver>0){
+                int calcularHoras = diffHorasDevolver-(diffDiasDevolver*24);
+                System.out.println("Todavia te quedan "+diffDiasDevolver+" dia/s y " + calcularHoras + " hora/s para devolver el material. Estas seguro que deseas devolverlo? (escribe si o no)");
+                String confirmarOperacion = lector.next();
+                if(confirmarOperacion.equalsIgnoreCase("si")){
+                    aplicarDevolucionMaterial(con, idMaterial, horaActual);
+                }
+                else if(confirmarOperacion.equalsIgnoreCase("no")){
+                    System.out.println("Devolucion cancelada");
+                }
+                else{
+                    System.out.println("Tienes que escribir si o no, operacion cancelada");
+                }
+            }
+            //Si ya deveria haber devuelto el material, se le informa y se pone una multa
+            else if(diffHorasDevolver<0){
+                if(diffHorasDevolver>-14){
+                    System.out.println("Como has devuelto el material antes de las 9:00 del dia sigiente solo tienes que pagar una multa de 5€");
+                    aplicarDevolucionMaterial(con, idMaterial, horaActual);
+                    System.out.println("Multa: 5€");
+                }
+                else{
+                    System.out.println("Como te has pasado de las 9:00 del dia siguiente de cuando devias devolver te cobramos 5€ mas 1€ por hora de retraso mas 7€ por dia de retraso ");
+                    int totalMulta = 5 + (diffHorasDevolver*-1) -14 + 7*(diffDiasDevolver*-1);
+                    aplicarDevolucionMaterial(con, idMaterial, horaActual);
+                    System.out.println("Multa: "+totalMulta+"€");
+                }
+                
+            }
+            stBuscarDiasHorasDevolver.close();
+            rsBuscarDiasHorasDevolver.close();
+            //aplicarDevolucionMaterial(con, idMaterial);
         }
+        //Si no encuentra el id del material o si esta disponible imprimimos mensaje
         else{
             System.out.println("No se ha encontrado el id del material");
         }
-        
+        stBuscarMaterial.close();
+        rsBuscarMaterial.close();
         //SELECT DATEDIFF(hour, '2017/08/25', '2011/08/25') AS DateDiff;
+    }
+
+    public static void aplicarDevolucionMaterial(Connection con, String idMaterial, String horaActual) throws SQLException {
+        String strPasarDisp = "UPDATE material SET disponibilidad = true WHERE id = ?";
+        PreparedStatement stPasarDisp = con.prepareStatement(strPasarDisp);
+        stPasarDisp.setString(1,idMaterial);
+        boolean n = stPasarDisp.execute();
+        System.out.println("Devolucion completada con exito");
+        System.out.println("----Ticket----");
+        System.out.println("Id material: "+idMaterial);
+        System.out.println("Fecha y hora devolucion: "+horaActual);
+        stPasarDisp.close();
+    }
+    
+    public static void consultarInfoPistas() throws SQLException{
+        ArrayList<Pista> arrayPistas = generarObjPistasConBD();
+        int pistasAzulesTotales = 0;
+        int pistasVerdesTotales = 0;
+        int pistasRojasTotales = 0;
+        int pistasNegrasTotales = 0;
+        int pistasAzulesTotalesAbiertas = 0;
+        int pistasVerdesTotalesAbiertas = 0;
+        int pistasRojasTotalesAbiertas = 0;
+        int pistasNegrasTotalesAbiertas = 0;
+        String strInfoPistas = "\n----Info Pistas Ampliada----";
+        String pistaAbierta = "si";
+        for (int i = 0; i < arrayPistas.size(); i++) {
+            if(arrayPistas.get(i).isPistaAbierta()==false){pistaAbierta="no";}
+            strInfoPistas += "\nNombre pista: "+arrayPistas.get(i).getNombre()+". Nivel: "+arrayPistas.get(i).getNivel()+". Pista abierta: "+pistaAbierta+". Altura inicio: "+arrayPistas.get(i).getAlturaInicio()+". Altura fin: "+arrayPistas.get(i).getAlturaFin()+". Temperatura: "+arrayPistas.get(i).getTemp();
+            if(arrayPistas.get(i).getNivel().equals("AZUL")){
+                pistasAzulesTotales++;
+                if(arrayPistas.get(i).isPistaAbierta()==true){
+                    pistasAzulesTotalesAbiertas++;
+                }
+            }
+            else if(arrayPistas.get(i).getNivel().equals("VERDE")){
+                pistasVerdesTotales++;
+                if(arrayPistas.get(i).isPistaAbierta()==true){
+                    pistasVerdesTotalesAbiertas++;
+                }
+            }
+            else if(arrayPistas.get(i).getNivel().equals("ROJA")){
+                pistasRojasTotales++;
+                if(arrayPistas.get(i).isPistaAbierta()==true){
+                    pistasRojasTotalesAbiertas++;
+                }
+            }
+            else if(arrayPistas.get(i).getNivel().equals("NEGRA")){
+                pistasNegrasTotales++;
+                if(arrayPistas.get(i).isPistaAbierta()==true){
+                    pistasNegrasTotalesAbiertas++;
+                }
+            }
+        }
+        int pistasAbiertasTotales = pistasAzulesTotalesAbiertas+pistasVerdesTotalesAbiertas+pistasRojasTotalesAbiertas+pistasNegrasTotalesAbiertas;
+        System.out.println("----Info pistas----");
+        System.out.println("Pistas abiertas: "+pistasAbiertasTotales+"/"+arrayPistas.size());
+        System.out.println("Pistas azules abiertas: "+pistasAzulesTotalesAbiertas+"/"+pistasAzulesTotales);
+        System.out.println("Pistas verdes abiertas: "+pistasVerdesTotalesAbiertas+"/"+pistasVerdesTotales);
+        System.out.println("Pistas rojas abiertas: "+pistasRojasTotalesAbiertas+"/"+pistasRojasTotales);
+        System.out.println("Pistas negras abiertas: "+pistasNegrasTotalesAbiertas+"/"+pistasNegrasTotales);
+        System.out.println(strInfoPistas);
+    }
+
+    public static ArrayList<Pista> generarObjPistasConBD() throws SQLException {
+        Connection con = establecerConexion();
+        ArrayList<Pista> arrayPistas = new ArrayList<Pista>();
+        PreparedStatement stSeleccionarInfoPistasBD = con.prepareStatement("SELECT * from pistas");
+        ResultSet rsSeleccionarInfoPistasBD = stSeleccionarInfoPistasBD.executeQuery();
+        while(rsSeleccionarInfoPistasBD.next()){
+            int id = rsSeleccionarInfoPistasBD.getInt("id");
+            String nombre = rsSeleccionarInfoPistasBD.getString("nombre");
+            int alturaInicio = rsSeleccionarInfoPistasBD.getInt("altura_inicio");
+            int alturaFin = rsSeleccionarInfoPistasBD.getInt("altura_fin");
+            boolean pistaAbierta = rsSeleccionarInfoPistasBD.getBoolean("pista_abierta");
+            double temp = rsSeleccionarInfoPistasBD.getDouble("temp");
+            String nivel = rsSeleccionarInfoPistasBD.getString("nivel");
+            Pista p1=new Pista(id, nombre, alturaInicio, alturaFin, pistaAbierta, temp, nivel);
+            arrayPistas.add(p1);
+        }
+        return arrayPistas;
+    }
+    
+    public static void consultarRutasPorDificultad() throws SQLException{
+        ArrayList<Pista> arrayPistas = generarObjPistasConBD();
+        Scanner lector = new Scanner(System.in);
+        System.out.println("\n----Consultar pistas por dificultad----");
+        System.out.println("Dime tu nivel, escribe principante, nivel medio, experto");
+        String nivel = lector.nextLine();
+        String nivelPista1 = "";
+        String nivelPista2 = "";
+        if(nivel.equalsIgnoreCase("principiante")){
+            nivelPista1 = "AZUL";
+            nivelPista2 = "VERDE";
+        }
+        else if(nivel.equalsIgnoreCase("nivel medio")){
+            nivelPista1 = "VERDE";
+            nivelPista2 = "ROJA";
+        }
+        else if(nivel.equalsIgnoreCase("experto")){
+            nivelPista1 = "ROJA";
+            nivelPista2 = "NEGRA";
+        }
+        else{
+            System.out.println("Escribe principante, nivel medio o experto");
+        }
+        System.out.println("\n----Tus pistas----");
+        for (int i = 0; i < arrayPistas.size(); i++) {
+            if(arrayPistas.get(i).getNivel().equals(nivelPista1) || arrayPistas.get(i).getNivel().equals(nivelPista2)){
+                String nombrePista = "";
+                String alturaInicio = "";
+                String alturaFin = "";
+                if(arrayPistas.get(i).getNivel().equals("AZUL")){
+                    nombrePista = "\033[34m"+arrayPistas.get(i).getNombre()+"\u001B[0m";
+                }
+                else if(arrayPistas.get(i).getNivel().equals("VERDE")){
+                    nombrePista = "\033[32m"+arrayPistas.get(i).getNombre()+"\u001B[0m";
+                }
+                else if(arrayPistas.get(i).getNivel().equals("ROJA")){
+                    nombrePista = "\033[31m"+arrayPistas.get(i).getNombre()+"\u001B[0m";
+                }
+                else if(arrayPistas.get(i).getNivel().equals("NEGRA")){
+                    nombrePista = arrayPistas.get(i).getNombre();
+                }
+                
+                if(arrayPistas.get(i).getAlturaInicio()==2000){
+                    alturaInicio ="\033[37;45m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                }
+                else if(arrayPistas.get(i).getAlturaInicio()==1500){
+                    alturaInicio ="\033[37;41m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                }
+                else if(arrayPistas.get(i).getAlturaInicio()==1000){
+                    alturaInicio ="\033[37;44m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                }
+                else if(arrayPistas.get(i).getAlturaInicio()==500){
+                    alturaInicio ="\033[37;46m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                }
+                else if(arrayPistas.get(i).getAlturaInicio()==0){
+                    alturaInicio ="\033[37;43m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                }
+                
+                if(arrayPistas.get(i).getAlturaFin()==2000){
+                    alturaFin ="\033[37;45m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                }
+                else if(arrayPistas.get(i).getAlturaFin()==1500){
+                    alturaFin ="\033[37;41m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                }
+                else if(arrayPistas.get(i).getAlturaFin()==1000){
+                    alturaFin ="\033[37;44m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                }
+                else if(arrayPistas.get(i).getAlturaFin()==500){
+                    alturaFin ="\033[37;46m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                }
+                else if(arrayPistas.get(i).getAlturaFin()==0){
+                    alturaFin ="\033[37;43m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                }
+                        
+                System.out.println("\n------------------\n"+nombrePista+"\n------------------\n"+alturaInicio+" "+alturaFin+"\n------------------");
+                //System.out.println("Pista "+arrayPistas.get(i).getNombre()+". Altura inicio "+arrayPistas.get(i).getAlturaInicio()+". Altura fin "+arrayPistas.get(i).getAlturaFin()+"("+arrayPistas.get(i).getNivel()+")");
+            }
+        }
+        
+        /*for (int i = 0; i < arrayPistas.size(); i++) {
+            if(arrayPistas.get(i).getAlturaInicio()==2000 && (arrayPistas.get(i).getNivel().equals(nivelPista1) || arrayPistas.get(i).getNivel().equals(nivelPista2))){
+                System.out.println("Baja por "+arrayPistas.get(i).getNombre()+" a 2000 metros hasta"+arrayPistas.get(i).getNombre()+ ("+arrayPistas.get(i).getNivel()+")");
+                if(arrayPistas.get(i).getAlturaFin()==1500){
+                    for (int j = 0; j < arrayPistas.size(); j++) {
+                        if(arrayPistas.get(j).getAlturaInicio()==1500 && (arrayPistas.get(j).getNivel().equals(nivelPista1) || arrayPistas.get(j).getNivel().equals(nivelPista2))){
+                            System.out.println("Puedes seguir por "+arrayPistas.get(j).getNombre()+" a 1500 metros ("+arrayPistas.get(j).getNivel()+")");
+                        }
+                    } 
+                }
+            }
+        }*/
     }
 }
 
