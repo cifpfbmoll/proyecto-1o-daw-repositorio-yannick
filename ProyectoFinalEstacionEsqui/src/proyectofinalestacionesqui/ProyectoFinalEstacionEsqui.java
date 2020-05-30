@@ -89,8 +89,14 @@ public class ProyectoFinalEstacionEsqui {
                 case 6:
                     consultarRutasPorDificultad();
                     break;
+                case 7:
+                    tareasMantenimiento();
+                    break;
                 case 8:
                     SeguirMostrandoMenu = false;
+                    break;
+                default:
+                    System.out.println("Escribe una opcion valida");
                     break;
             }
         }    
@@ -1077,6 +1083,66 @@ public class ProyectoFinalEstacionEsqui {
                 }
             }
         }*/
+    }
+    
+    public static void tareasMantenimiento() throws SQLException{
+        Scanner lector = new Scanner(System.in);
+        System.out.println("1- Cambiar informacion de pistas");
+        System.out.println("2- Agregar nuevo material de esqui/snow");
+        int opcion = lector.nextInt();
+        switch(opcion){
+            case 1:
+                cambiarInfoPistas();
+                break;
+            case 2:
+                añadirNuevoMaterial();
+                break;
+            default:
+                System.out.println("Elige una opcion valida");
+                break;
+        }
+    }
+    
+    public static void cambiarInfoPistas() throws SQLException{
+        Scanner lector = new Scanner(System.in);
+        //Recogemos el nombre de la pista para hacer cambios en ella
+        System.out.println("----Cambiar informacion de pistas----");
+        System.out.println("Dime el nombre de la pista");
+        String nombrePista = lector.nextLine();
+        
+        //Recogemos los datos que vamos a cambiar
+        System.out.println("Dime la temperatura de la pista");
+        double tempPista = lector.nextDouble();
+        System.out.println("La pista esta abierta (escribe Si o No)");
+        String pistaAbierta = lector.next();
+        boolean booleanPistaAbierta = true;
+        if(pistaAbierta.equalsIgnoreCase("si")){
+        }
+        else if(pistaAbierta.equalsIgnoreCase("no")){
+            booleanPistaAbierta = false;
+        }
+        else{
+            System.out.println("Escribe Si o No");
+        }
+        
+        //Hacemos los cambios
+        Connection con = establecerConexion();
+        String strCambiarInfoPistas = "UPDATE pistas SET temp = ?, pista_abierta = ? WHERE nombre = ?";
+        PreparedStatement stCambiarInfoPistas = con.prepareStatement(strCambiarInfoPistas);
+        stCambiarInfoPistas.setDouble(1,tempPista);
+        stCambiarInfoPistas.setBoolean(2, booleanPistaAbierta);
+        stCambiarInfoPistas.setString(3, nombrePista);
+        boolean n = stCambiarInfoPistas.execute();
+        System.out.println("Cambios realizados!");
+        
+        if (stCambiarInfoPistas!= null) stCambiarInfoPistas.close ();//cierra el objeto Statement llamado stCambiarInfoPistas
+        if (con!= null) con.close (); //cierra el objeto Connection llamado con*/
+    }
+    
+    public static void añadirNuevoMaterial() throws SQLException{
+        //Creamos un nuevo objeto NuevoMaterial y lo pasamos a el metodo añadirMaterialNuevoDB(), que recoje los datos, los guarda en el objeto y los inserta en la BD
+        NuevoMaterial nm1 = new NuevoMaterial();
+        nm1.añadirMaterialNuevoDB();
     }
 }
 
