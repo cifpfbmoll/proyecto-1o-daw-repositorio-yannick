@@ -72,3 +72,17 @@ Nombre: Yannick
 Apellidos: Baratte Forner
 Fecha de nacimiento: 21/05/1993
 Hora y fecha: 17:40:58 18/05/2020
+---- Datos Usuario ----
+Identificador: 31
+DNI: 23415671T
+Nombre: Juan
+Apellidos: Sanchez Garcia
+Fecha de nacimiento: 15/04/1980
+Hora y fecha: 19:51:16 30/05/2020
+---- Datos Usuario ----
+Identificador: 32
+DNI: 12345678Q
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 15:09:53 31/05/2020

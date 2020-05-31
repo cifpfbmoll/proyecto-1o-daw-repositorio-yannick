@@ -49,9 +49,15 @@ public class ProyectoFinalEstacionEsqui {
         }
     }
 
+    /**
+     * Metodo que muestra el menu principal y nos manda a los metodos de cada una de las opciones
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
+     */
     public static void menuPrincipal() throws SQLException {
         // TODO code application logic here
         Scanner lector = new Scanner(System.in);
+        //Creamos el objeto que nos permite pintar texto con color y lo pasamos por parametro a los metodos quee lo utilizan
+        ColorTexto ct1 = new ColorTexto("\u001B[0m","\033[34m","\033[32m","\033[31m","\033[37;41m","\033[37;43m","\033[37;44m","\033[37;45m","\033[37;46m");
         boolean SeguirMostrandoMenu = true;
         while(SeguirMostrandoMenu){
             System.out.println("\n---- Menu principal ----");
@@ -84,10 +90,10 @@ public class ProyectoFinalEstacionEsqui {
                     devolverMaterial();
                     break;
                 case 5:
-                    consultarInfoPistas();
+                    consultarInfoPistas(ct1);
                     break;
                 case 6:
-                    consultarRutasPorDificultad();
+                    consultarRutasPorDificultad(ct1);
                     break;
                 case 7:
                     tareasMantenimiento();
@@ -239,28 +245,37 @@ public class ProyectoFinalEstacionEsqui {
      * @return nos devuelve true o false indicando el resultado de la comprobacion
      */
     public static boolean comprobarDni(String dni){
+        //Resultado comprobado es false cuando lo inicializamos y sera false mientras no se demuestre que el DNI es correcto
         boolean resultadoComprobado = false;
+        //Si escribe 0 es que no tiene DNI asi que pasamos a true resultadoComprobado y lo retornamos al final del codigo
         if(dni.equals("0")){
              resultadoComprobado = true;
         }
+        //Si tiene DNI comprobamos que su formato sea correcto
         else{
+            //Si dni tiene 9 caracteres
             if(dni.length()==9){
                 int sumadorDigitos = 0;
                 boolean ultimoLetra = false;
+                //Comprobamos si los 8 primeros caracteres son dijitos, si el caracter que estamos recorriendo lo es, sumamos 1 al contador sumadorDigitos
                 for(int i=0;i<8;i++){
                     char c = dni.charAt(i);
                     if(Character.isDigit(c)){
                         sumadorDigitos++;
                     }
                 }
+                //Si el ultimo caracter del DNI es una letra pasamos ultimoLetra a true
                 if(Character.isLetter(dni.charAt(8))){
                     ultimoLetra = true;
                 }
+                //Si sumadorDigitos es igual a 8 y ultimoLetra es igual a true, pasamos resultadoComprobado a true, 
+                //es decir si los 8 primeros caracteres del DNI son numeros y el ultimo caracter es una letra pasamos resultadoComprobado a true
                 if(sumadorDigitos==8&&ultimoLetra){
                     resultadoComprobado = true;
                 }
             }
         }
+        //Retornamos resultadoComprobado, si no se ha podido comprobar el DNI retornara false, si se ha comprobado que es valido retornara true
         return resultadoComprobado;
     }
     
@@ -385,123 +400,48 @@ public class ProyectoFinalEstacionEsqui {
         String opcionAlta = lector.nextLine();
         //Si esta dado de alta
         if(opcionAlta.toLowerCase().equals("si")){
-            System.out.println("Tienes DNI? Escribe Si o No");
-            String opcionDNI = lector.nextLine();
-            //Si tiene DNI
-            if(opcionDNI.toLowerCase().equals("si")){
-                System.out.println("Dime tu DNI con este formato 12345678Q");
-                String dniStr = lector.nextLine();
-                boolean dniValido = comprobarDni(dniStr);
-                System.out.println("Dime tu fecha de nacimiento con el siguiente formato dd/mm/aaaa ej 01/01/1990");
-                String fechaStr = lector.nextLine();
-                boolean fechaValida = comprobarFechaNacimiento(fechaStr);
-                //Si el dni i la fecha de nacimiento tiene el formato valido
-                if(dniValido && fechaValida){
-                    //Buscamos que el usuario esté en la base de datos
-                    Connection con = establecerConexion();
-                    PreparedStatement stComprUs = con.prepareStatement("select id, nombre, apellidos from clientes where dni = ? and fecha_nacimiento = str_to_date(?,'%d/%m/%Y')");
-                    stComprUs.setString(1, dniStr); 
-                    stComprUs.setString(2, fechaStr); 
-                    ResultSet rsComprUs = stComprUs.executeQuery();
-                    //Si hay resultados es que el usuario esta dado de alta
-                    if (rsComprUs.next()){
-                        //Cojemos el id del usuario
-                        int idCliente = rsComprUs.getInt ("id");
-                        //Insertamos en la tabla intermedia forfait_cliente los datos necesarios para que quede registro de la compra del forfait
-                        String insertaClienteForfait = "INSERT INTO forfait_cliente VALUES (?, ?, NOW(), ?)";
-                        PreparedStatement stInsertaClienteForfait = con.prepareStatement(insertaClienteForfait);
-                        stInsertaClienteForfait.setString(1,tipoForfait);
-                        stInsertaClienteForfait.setInt(2,idCliente);
-                        //Buscamos el precio del forfait
-                        PreparedStatement stBuscPrecForf = con.prepareStatement("select precio from tipo_forfait where id = ?");
-                        stBuscPrecForf.setString(1, tipoForfait);
-                        ResultSet rsBuscPrecForf = stBuscPrecForf.executeQuery();
-                        rsBuscPrecForf.next();
-                        double precioForfait = rsBuscPrecForf.getDouble("precio");
-                        //Y lo insertamos en la tabla intermedia
-                        stInsertaClienteForfait.setDouble(3,precioForfait);
-                        //Ejecutamos el insert con los datos
-                        boolean n = stInsertaClienteForfait.execute();
-                        //Imprimimos mensage para informar que el proceso se ha realizado con exito
-                        System.out.println("Proceso completado!\n");
-                        //Con este metodo imprimimos forfait y tiket
-                        imprForfTick(strTipoForfait, rsComprUs, precioForfait);
-                        
-                        //Cerramos st y rs
-                        stInsertaClienteForfait.close();
-                        rsBuscPrecForf.close();
-                    }
-                    //Si no da resultados es que no esta en la base de datos, imprimimos mensaje informando
-                    else{
-                        System.out.println("Parece ser que tu usuario no esta registrado");
-                    }
+            //Autentificamos al usuario y nos devuelve su id
+            int idCliente = autentificarUsuario();
+            
+            //Comprobamos que el usuario este de alta
+            Connection con = establecerConexion();
+            PreparedStatement stComprUs = con.prepareStatement("select id, nombre, apellidos from clientes where id = ?");
+            stComprUs.setInt(1, idCliente); 
+            ResultSet rsComprUs = stComprUs.executeQuery();
+            //Si hay resultados es que el usuario esta dado de alta
+            if (rsComprUs.next()){
+                //Insertamos en la tabla intermedia forfait_cliente los datos necesarios para que quede registro de la compra del forfait
+                String insertaClienteForfait = "INSERT INTO forfait_cliente VALUES (?, ?, NOW(), ?)";
+                PreparedStatement stInsertaClienteForfait = con.prepareStatement(insertaClienteForfait);
+                stInsertaClienteForfait.setString(1,tipoForfait);
+                stInsertaClienteForfait.setInt(2,idCliente);
+                //Buscamos el precio del forfait
+                PreparedStatement stBuscPrecForf = con.prepareStatement("select precio from tipo_forfait where id = ?");
+                stBuscPrecForf.setString(1, tipoForfait);
+                ResultSet rsBuscPrecForf = stBuscPrecForf.executeQuery();
+                rsBuscPrecForf.next();
+                double precioForfait = rsBuscPrecForf.getDouble("precio");
+                //Y lo insertamos en la tabla intermedia
+                stInsertaClienteForfait.setDouble(3,precioForfait);
+                //Ejecutamos el insert con los datos
+                boolean n = stInsertaClienteForfait.execute();
+                //Imprimimos mensage para informar que el proceso se ha realizado con exito
+                System.out.println("Proceso completado!\n");
+                //Con este metodo imprimimos forfait y tiket
+                imprForfTick(strTipoForfait, rsComprUs, precioForfait);
 
-                    if (rsComprUs!= null) rsComprUs.close (); //cierra el objeto ResultSet llamado rsComprUs
-                    if (stComprUs!= null) stComprUs.close ();//cierra el objeto Statement llamado stComprUs
-                    if (con!= null) con.close (); //cierra el objeto Connection llamado con*/
-                }
-                //Si dni o fecha no tienen el formato adecuado imprimimos mensaje
-                else{
-                    System.out.println("El DNI o la fecha no tienen el formato adecuado");
-                }
+                //Cerramos st y rs
+                stInsertaClienteForfait.close();
+                rsBuscPrecForf.close();
             }
-            //Si no tienen DNI hacemos las operaciones con el id de usuario
-            else if(opcionDNI.toLowerCase().equals("no")){
-                System.out.println("Dime tu identificador");
-                int identInt = lector.nextInt();
-                System.out.println("Dime tu fecha de nacimiento con el siguiente formato dd/mm/aaaa ej 01/01/1990");
-                String fechaStr = lector.next();
-                boolean fechaValida = comprobarFechaNacimiento(fechaStr);
-                //Si la fecha de nacimiento tiene el formato valido
-                if(fechaValida){
-                    Connection con = establecerConexion();
-                    PreparedStatement stComprUs = con.prepareStatement("select id, nombre, apellidos from clientes where id = ? and fecha_nacimiento = str_to_date(?,'%d/%m/%Y')");
-                    stComprUs.setInt(1, identInt); 
-                    stComprUs.setString(2, fechaStr); 
-                    ResultSet rsComprUs = stComprUs.executeQuery();
-                    //Si hay resultados es que el usuario esta dado de alta
-                    if (rsComprUs.next()){
-                        //Insertamos en la tabla intermedia forfait_cliente los datos necesarios para que quede registro de la compra del forfait
-                        String insertaClienteForfait = "INSERT INTO forfait_cliente VALUES (?, ?, NOW(), ?)";
-                        PreparedStatement stInsertaClienteForfait = con.prepareStatement(insertaClienteForfait);
-                        stInsertaClienteForfait.setString(1,tipoForfait);
-                        stInsertaClienteForfait.setInt(2,identInt);
-                        //Buscamos el precio del forfait
-                        PreparedStatement stBuscPrecForf = con.prepareStatement("select precio from tipo_forfait where id = ?");
-                        stBuscPrecForf.setString(1, tipoForfait);
-                        ResultSet rsBuscPrecForf = stBuscPrecForf.executeQuery();
-                        rsBuscPrecForf.next();
-                        double precioForfait = rsBuscPrecForf.getDouble("precio");
-                        //Y lo insertamos en la tabla intermedia
-                        stInsertaClienteForfait.setDouble(3,precioForfait);
-                        //Ejecutamos el insert con los datos
-                        boolean n = stInsertaClienteForfait.execute();
-                        //Con este metodo imprimimos forfait y tiket
-                        imprForfTick(strTipoForfait, rsComprUs, precioForfait);
-                        
-                        //Cerramos st y rs
-                        stInsertaClienteForfait.close();
-                        rsBuscPrecForf.close();
-                        
-                    }
-                    //Si no da resultados es que no esta en la base de datos, imprimimos mensaje informando
-                    else{
-                        System.out.println("Parece ser que tu usuario no esta registrado");
-                    }
-                    
-                    if (rsComprUs!= null) rsComprUs.close (); //cierra el objeto ResultSet llamado rsComprUs
-                    if (stComprUs!= null) stComprUs.close ();//cierra el objeto Statement llamado stComprUs
-                    if (con!= null) con.close (); //cierra el objeto Connection llamado con*/
-                }
-                //Si la fecha no tienen el formato adecuado imprimimos mensaje
-                else{
-                    System.out.println("La fecha no tiene el formato adecuado");
-                }
-            }
-            //Si no han escrito si o no a si tienen DNI mostramos mensaje
+            //Si no da resultados es que no esta en la base de datos, imprimimos mensaje informando
             else{
-                System.out.println("No has escrito Si o No");
+                System.out.println("Parece ser que tu usuario no esta registrado");
             }
+
+            if (rsComprUs!= null) rsComprUs.close (); //cierra el objeto ResultSet llamado rsComprUs
+            if (stComprUs!= null) stComprUs.close ();//cierra el objeto Statement llamado stComprUs
+            if (con!= null) con.close (); //cierra el objeto Connection llamado con
         }
         //Si nos indica que no esta dado de alta mostramos mensaje
         else if(opcionAlta.toLowerCase().equals("no")){
@@ -541,12 +481,19 @@ public class ProyectoFinalEstacionEsqui {
         System.out.println("Fecha y hora: "+hourdateFormat.format(date));
         System.out.println("Precio: "+precioForfait+"€");
     }
-    
+    /**
+     * Este metodo se encarga de tramitar el alquiler de material segun lo que indique el cliente. 
+     * Para ello se solicitan los datos necesarios y una vez se sabe que material y que talla se necesita,
+     * y el id del cliente (se autentifica), se llama a la funcion buscarAlquilarMaterial() con los parametros necesarios
+     * para que se complete (o no, si el material no esta disponible) el alquiler, se hacen cambios en la 
+     * base de datos y se imprime ticket.
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
+     */
     public static void alquilarMaterial() throws SQLException {
         Scanner lector = new Scanner(System.in);
         int idCliente = autentificarUsuario();
         if(idCliente!=0){
-            System.out.println("----Alquilar material----");
+            System.out.println("\n----Alquilar material----");
             System.out.println("Que desea alquilar material de esquí o de snow? (escriba esqui o snow)");
             String tipoMaterial = lector.next();
             if(tipoMaterial.equalsIgnoreCase("snow")){
@@ -634,10 +581,14 @@ public class ProyectoFinalEstacionEsqui {
         
     }
 
+    /**
+     * Método con el cual el usuario puede autentificarse. Pide los datos del usuario para autentificarse y si se identifica con éxito devuelve un int con su id, sino devuelve 0
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos 
+     */
     public static int autentificarUsuario() throws SQLException {
         Scanner lector = new Scanner(System.in);
         int idCliente = 0;
-        System.out.println("----Autentificar usuario----");
+        System.out.println("\n----Autentificar usuario----");
         System.out.println("Tienes DNI? (escribe Si o No)");
         String opcionDNI = lector.nextLine();
         //Si tiene DNI
@@ -765,7 +716,7 @@ public class ProyectoFinalEstacionEsqui {
                     rsBuscarMaterialImpr.next();
                     String fechaHoraInicio = rsBuscarMaterialImpr.getString("fecha_hora_inicio");
                     String fechaHoraFin = rsBuscarMaterialImpr.getString("fecha_hora_fin");
-                    System.out.println("----Ticket----");
+                    System.out.println("\n----Ticket----");
                     System.out.println("Material alquilado: "+material.getNombreTipoMaterial());
                     System.out.println("Talla: "+material.getTalla());
                     System.out.println("Id del material: "+idMaterialEncontrado);
@@ -824,6 +775,10 @@ public class ProyectoFinalEstacionEsqui {
         rsBuscarMaterial.close();
     }
     
+    /**
+     * Metodo cuya función es que el cliente pueda devolver el material. Pedimos el id del material, comprobamos que este pendiente de devolver y devolvemos, si el cliente se retrasa con la devolución tendrá que pagar una multa. 
+     * @throws SQLException 
+     */
     public static void devolverMaterial() throws SQLException{
         Scanner lector = new Scanner(System.in);
         System.out.println("\n----Devolver material----");
@@ -847,9 +802,6 @@ public class ProyectoFinalEstacionEsqui {
             int diffDiasDevolver = rsBuscarDiasHorasDevolver.getInt("fecha_hora_fin_diff_dias");
             int diffHorasDevolver = rsBuscarDiasHorasDevolver.getInt("fecha_hora_fin_diff_horas");
             String horaActual = rsBuscarDiasHorasDevolver.getString("ahora");
-            /*System.out.println("dias: "+diffDiasDevolver);
-            System.out.println("horas: "+diffHorasDevolver);
-            System.out.println("Ahora: "+horaActual);*/
             //Si quedan 3 horas o menos de alquiler mientras no se retrase de la hora de devolucion, lo devolvemos y ya
             if(diffHorasDevolver<=3 && diffHorasDevolver>=0){
                 aplicarDevolucionMaterial(con, idMaterial, horaActual);
@@ -900,7 +852,6 @@ public class ProyectoFinalEstacionEsqui {
             }
             stBuscarDiasHorasDevolver.close();
             rsBuscarDiasHorasDevolver.close();
-            //aplicarDevolucionMaterial(con, idMaterial);
         }
         //Si no encuentra el id del material o si esta disponible imprimimos mensaje
         else{
@@ -908,9 +859,15 @@ public class ProyectoFinalEstacionEsqui {
         }
         stBuscarMaterial.close();
         rsBuscarMaterial.close();
-        //SELECT DATEDIFF(hour, '2017/08/25', '2011/08/25') AS DateDiff;
     }
 
+    /**
+     * Aplica una devolución, es decir una vez comprobada la devolución y calculada y mostrada la multa en caso que la haya aplicarDevolucionMaterial() nos hace los cambios en la base de datos y nos imprime un ticket.
+     * @param con objeto Connection necesario para realizar la conexion con la base de datos
+     * @param idMaterial id del material al que vamos a aplicar la devolucion
+     * @param horaActual hora actual para imprimir en el ticket
+     * @throws SQLException 
+     */
     public static void aplicarDevolucionMaterial(Connection con, String idMaterial, String horaActual) throws SQLException {
         String strPasarDisp = "UPDATE material SET disponibilidad = true WHERE id = ?";
         PreparedStatement stPasarDisp = con.prepareStatement(strPasarDisp);
@@ -923,8 +880,10 @@ public class ProyectoFinalEstacionEsqui {
         stPasarDisp.close();
     }
     
-    public static void consultarInfoPistas() throws SQLException{
+    public static void consultarInfoPistas(ColorTexto color) throws SQLException{
+        //Generamos un array de objetos a partir de la info de pistas de la BD
         ArrayList<Pista> arrayPistas = generarObjPistasConBD();
+        //Generamos variables para los contadores de lo que queremos contar
         int pistasAzulesTotales = 0;
         int pistasVerdesTotales = 0;
         int pistasRojasTotales = 0;
@@ -933,25 +892,32 @@ public class ProyectoFinalEstacionEsqui {
         int pistasVerdesTotalesAbiertas = 0;
         int pistasRojasTotalesAbiertas = 0;
         int pistasNegrasTotalesAbiertas = 0;
+        //Creamos un String en el que almacenaremos toda la info ampliada de las pistas
         String strInfoPistas = "\n----Info Pistas Ampliada----";
-        String pistaAbierta = "si";
+        //Recorremos el array de objetos
         for (int i = 0; i < arrayPistas.size(); i++) {
+            //La pista esta abierta por defecto, si encontramos que esta cerrada lo cambiamos en el String pistaAbierta que mostraremos mas adelante
+            String pistaAbierta = "si";
             if(arrayPistas.get(i).isPistaAbierta()==false){pistaAbierta="no";}
-            strInfoPistas += "\nNombre pista: "+arrayPistas.get(i).getNombre()+". Nivel: "+arrayPistas.get(i).getNivel()+". Pista abierta: "+pistaAbierta+". Altura inicio: "+arrayPistas.get(i).getAlturaInicio()+". Altura fin: "+arrayPistas.get(i).getAlturaFin()+". Temperatura: "+arrayPistas.get(i).getTemp();
+            
+            //Miramos de que color es la pista aumentamos contadores y añadimos color al texto que despues completaremos y imprimiremos (strInfoPistas)
             if(arrayPistas.get(i).getNivel().equals("AZUL")){
                 pistasAzulesTotales++;
+                strInfoPistas += color.getTextoAzul();
                 if(arrayPistas.get(i).isPistaAbierta()==true){
                     pistasAzulesTotalesAbiertas++;
                 }
             }
             else if(arrayPistas.get(i).getNivel().equals("VERDE")){
                 pistasVerdesTotales++;
+                strInfoPistas += color.getTextoVerde();
                 if(arrayPistas.get(i).isPistaAbierta()==true){
                     pistasVerdesTotalesAbiertas++;
                 }
             }
             else if(arrayPistas.get(i).getNivel().equals("ROJA")){
                 pistasRojasTotales++;
+                strInfoPistas += color.getTextoRojo();
                 if(arrayPistas.get(i).isPistaAbierta()==true){
                     pistasRojasTotalesAbiertas++;
                 }
@@ -962,14 +928,18 @@ public class ProyectoFinalEstacionEsqui {
                     pistasNegrasTotalesAbiertas++;
                 }
             }
+            //Completamos la info ampliada de la pista que estamos recorriendo
+            strInfoPistas += "\nNombre pista: "+arrayPistas.get(i).getNombre()+". Nivel: "+arrayPistas.get(i).getNivel()+". Pista abierta: "+pistaAbierta+". Altura inicio: "+arrayPistas.get(i).getAlturaInicio()+". Altura fin: "+arrayPistas.get(i).getAlturaFin()+". Temperatura: "+arrayPistas.get(i).getTemp()+color.getReset();
         }
+        //Imprimimos la informacion de pistas abiertas que hemos recopilado con su correspondiente color
         int pistasAbiertasTotales = pistasAzulesTotalesAbiertas+pistasVerdesTotalesAbiertas+pistasRojasTotalesAbiertas+pistasNegrasTotalesAbiertas;
         System.out.println("----Info pistas----");
         System.out.println("Pistas abiertas: "+pistasAbiertasTotales+"/"+arrayPistas.size());
-        System.out.println("Pistas azules abiertas: "+pistasAzulesTotalesAbiertas+"/"+pistasAzulesTotales);
-        System.out.println("Pistas verdes abiertas: "+pistasVerdesTotalesAbiertas+"/"+pistasVerdesTotales);
-        System.out.println("Pistas rojas abiertas: "+pistasRojasTotalesAbiertas+"/"+pistasRojasTotales);
+        System.out.println(color.getTextoAzul()+"Pistas azules abiertas: "+pistasAzulesTotalesAbiertas+"/"+pistasAzulesTotales+color.getReset());
+        System.out.println(color.getTextoVerde()+"Pistas verdes abiertas: "+pistasVerdesTotalesAbiertas+"/"+pistasVerdesTotales+color.getReset());
+        System.out.println(color.getTextoRojo()+"Pistas rojas abiertas: "+pistasRojasTotalesAbiertas+"/"+pistasRojasTotales+color.getReset());
         System.out.println("Pistas negras abiertas: "+pistasNegrasTotalesAbiertas+"/"+pistasNegrasTotales);
+        //Imprimimos el strInfoPistas con toda la info ampliada de las pistas que hemos ido guardando con los colores de las pistas
         System.out.println(strInfoPistas);
     }
 
@@ -992,7 +962,7 @@ public class ProyectoFinalEstacionEsqui {
         return arrayPistas;
     }
     
-    public static void consultarRutasPorDificultad() throws SQLException{
+    public static void consultarRutasPorDificultad(ColorTexto color) throws SQLException{
         ArrayList<Pista> arrayPistas = generarObjPistasConBD();
         Scanner lector = new Scanner(System.in);
         System.out.println("\n----Consultar pistas por dificultad----");
@@ -1022,48 +992,48 @@ public class ProyectoFinalEstacionEsqui {
                 String alturaInicio = "";
                 String alturaFin = "";
                 if(arrayPistas.get(i).getNivel().equals("AZUL")){
-                    nombrePista = "\033[34m"+arrayPistas.get(i).getNombre()+"\u001B[0m";
+                    nombrePista = color.getTextoAzul()+arrayPistas.get(i).getNombre()+color.getReset();
                 }
                 else if(arrayPistas.get(i).getNivel().equals("VERDE")){
-                    nombrePista = "\033[32m"+arrayPistas.get(i).getNombre()+"\u001B[0m";
+                    nombrePista = color.getTextoVerde()+arrayPistas.get(i).getNombre()+color.getReset();
                 }
                 else if(arrayPistas.get(i).getNivel().equals("ROJA")){
-                    nombrePista = "\033[31m"+arrayPistas.get(i).getNombre()+"\u001B[0m";
+                    nombrePista = color.getTextoRojo()+arrayPistas.get(i).getNombre()+color.getReset();
                 }
                 else if(arrayPistas.get(i).getNivel().equals("NEGRA")){
                     nombrePista = arrayPistas.get(i).getNombre();
                 }
                 
                 if(arrayPistas.get(i).getAlturaInicio()==2000){
-                    alturaInicio ="\033[37;45m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                    alturaInicio =color.getTextoBlancoFondoMorado()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
                 }
                 else if(arrayPistas.get(i).getAlturaInicio()==1500){
-                    alturaInicio ="\033[37;41m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                    alturaInicio =color.getTextoBlancoFondoRojo()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
                 }
                 else if(arrayPistas.get(i).getAlturaInicio()==1000){
-                    alturaInicio ="\033[37;44m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                    alturaInicio =color.getTextoBlancoFondoAzul()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
                 }
                 else if(arrayPistas.get(i).getAlturaInicio()==500){
-                    alturaInicio ="\033[37;46m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                    alturaInicio =color.getTextoBlancoFondoAzulCyan()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
                 }
                 else if(arrayPistas.get(i).getAlturaInicio()==0){
-                    alturaInicio ="\033[37;43m Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" \u001B[0m";
+                    alturaInicio =color.getTextoBlancoFondoAmarillo()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
                 }
                 
                 if(arrayPistas.get(i).getAlturaFin()==2000){
-                    alturaFin ="\033[37;45m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                    alturaFin =color.getTextoBlancoFondoMorado()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
                 }
                 else if(arrayPistas.get(i).getAlturaFin()==1500){
-                    alturaFin ="\033[37;41m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                    alturaFin =color.getTextoBlancoFondoRojo()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
                 }
                 else if(arrayPistas.get(i).getAlturaFin()==1000){
-                    alturaFin ="\033[37;44m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                    alturaFin =color.getTextoBlancoFondoAzul()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
                 }
                 else if(arrayPistas.get(i).getAlturaFin()==500){
-                    alturaFin ="\033[37;46m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                    alturaFin =color.getTextoBlancoFondoAzulCyan()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
                 }
                 else if(arrayPistas.get(i).getAlturaFin()==0){
-                    alturaFin ="\033[37;43m Altura fin "+arrayPistas.get(i).getAlturaFin()+" \u001B[0m";
+                    alturaFin =color.getTextoBlancoFondoAmarillo()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
                 }
                         
                 System.out.println("\n------------------\n"+nombrePista+"\n------------------\n"+alturaInicio+" "+alturaFin+"\n------------------");
