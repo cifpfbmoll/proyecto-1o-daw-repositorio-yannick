@@ -1,0 +1,102 @@
+---- Datos Usuario ----
+Identificador: 19 (necesario para identificarte)
+DNI: sin DNI
+Nombre: Q
+Apellidos: Q
+Fecha de nacimiento: 21/05/1993---- Datos Usuario ----
+Identificador: 22 (necesario para identificarte)
+DNI: sin DNI
+Nombre: Q
+Apellidos: Q
+Fecha de nacimiento: 21/05/1993Hora y fecha: 15:50:33 12/05/2020
+---- Datos Usuario ----
+Identificador: 23 (necesario para identificarte)
+DNI: sin DNI
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 15:53:10 12/05/2020
+---- Datos Usuario ----
+Identificador: 24 (necesario para identificarte)
+DNI: sin DNI
+Nombre: Q
+Apellidos: Q
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 12:27:17 13/05/2020
+---- Datos Usuario ----
+Identificador: 25
+DNI: 47750189G
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 13:00:36 13/05/2020
+---- Datos Usuario ----
+Identificador: 26
+DNI: 47750189G
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 13:01:18 13/05/2020
+---- Datos Usuario ----
+Identificador: 27
+DNI: 47750189G
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 13:14:05 13/05/2020
+---- Datos Usuario ----
+Identificador: 28
+DNI: 47750189G
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 13:56:10 13/05/2020
+---- Datos Usuario ----
+Identificador: 29
+DNI: 47750189G
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 16:51:20 13/05/2020
+---- Datos Usuario ----
+Identificador: 30
+DNI: 47750189G
+Nombre: Yannick
+Apellidos: Baratte
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 17:17:12 13/05/2020
+---- Datos Usuario ----
+Identificador: 0
+DNI: 47750189G
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 17:40:58 18/05/2020
+---- Datos Usuario ----
+Identificador: 31
+DNI: 23415671T
+Nombre: Juan
+Apellidos: Sanchez Garcia
+Fecha de nacimiento: 15/04/1980
+Hora y fecha: 19:51:16 30/05/2020
+---- Datos Usuario ----
+Identificador: 32
+DNI: 12345678Q
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 15:09:53 31/05/2020
+---- Datos Usuario ----
+Identificador: 33
+DNI: 12345678O
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 00:59:55 01/06/2020
+---- Datos Usuario ----
+Identificador: 34
+DNI: 12345678D
+Nombre: Pepito
+Apellidos: Garcia Sanchez
+Fecha de nacimiento: 20/10/1990
+Hora y fecha: 01:44:11 01/06/2020
