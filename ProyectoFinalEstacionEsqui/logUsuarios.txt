@@ -86,3 +86,17 @@ Nombre: Yannick
 Apellidos: Baratte Forner
 Fecha de nacimiento: 21/05/1993
 Hora y fecha: 15:09:53 31/05/2020
+---- Datos Usuario ----
+Identificador: 33
+DNI: 12345678O
+Nombre: Yannick
+Apellidos: Baratte Forner
+Fecha de nacimiento: 21/05/1993
+Hora y fecha: 00:59:55 01/06/2020
+---- Datos Usuario ----
+Identificador: 34
+DNI: 12345678D
+Nombre: Pepito
+Apellidos: Garcia Sanchez
+Fecha de nacimiento: 20/10/1990
+Hora y fecha: 01:44:11 01/06/2020

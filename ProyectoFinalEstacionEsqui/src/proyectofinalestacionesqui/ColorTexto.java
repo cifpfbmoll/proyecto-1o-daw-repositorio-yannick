@@ -6,7 +6,7 @@
 package proyectofinalestacionesqui;
 
 /**
- *
+ * Esta clase sirve para instanciar un objeto ColorTexto con los codigos de colores que necesitamos para la aplicacion y que nos permite acceder facilmente a pintar texto con color
  * @author Yann
  */
 public class ColorTexto {

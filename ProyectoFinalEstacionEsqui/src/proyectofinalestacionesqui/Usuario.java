@@ -5,22 +5,12 @@
  */
 package proyectofinalestacionesqui;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import static proyectofinalestacionesqui.ProyectoFinalEstacionEsqui.crearUsuario;
-
 /**
  * Con esta clase Usuario intanciamos el objeto Usuario y una vez instanciado
  * recogemos los datos del usuario para enviarlos a la base de datos
  * @author Yann
  */
-public class Usuario implements PistasEsqui{
+public class Usuario {
     private String dni;
     private String nombre;
     private String apellidos;
@@ -148,9 +138,4 @@ public class Usuario implements PistasEsqui{
         }
         return nomApFinal;
     }
-    
-    
-    /*public boolean comprobarFecha(String fecha){
-        
-    }*/
 }

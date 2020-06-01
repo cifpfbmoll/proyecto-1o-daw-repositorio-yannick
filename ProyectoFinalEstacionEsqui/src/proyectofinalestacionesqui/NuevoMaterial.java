@@ -12,7 +12,7 @@ import java.util.Scanner;
 import static proyectofinalestacionesqui.ProyectoFinalEstacionEsqui.establecerConexion;
 
 /**
- *
+ * Esta clase nos sirve para instanciar un objeto tipo NuevoMaterial, lo usamos para agrupar la informacion de un nuevo material y añadirlo a la base de datos
  * @author Yann
  */
 public class NuevoMaterial {
@@ -63,9 +63,13 @@ public class NuevoMaterial {
         this.precio = precio;
     }
     
+    /**
+     * Con este metodo llenamos el objeto tipo NuevoMaterial que ha sido pasado desde añadirNuevoMaterial() con los datos del nuevo material y  luego lo a agregar a la base de datos.
+     * @throws SQLException 
+     */
     public void añadirMaterialNuevoDB() throws SQLException{
         Scanner lector = new Scanner(System.in);
-        System.out.println("----Añadir nuevo material----");
+        System.out.println("\n----Añadir nuevo material----");
         //Pedimos los datos del nuevo material y lo guardamos en el objeto
         System.out.println("Dime el id del material");
         String id = lector.next();
@@ -76,7 +80,7 @@ public class NuevoMaterial {
         System.out.println("Dime el tipo de material (tabla, esquis, botas_snow, botas_esqui)");
         String tipoMaterial = lector.next();
         this.setTipoMaterial(tipoMaterial);
-        System.out.println("Dime el precio del material");
+        System.out.println("Dime el precio de alquiler del material por 1 dia");
         double precio = lector.nextDouble();
         this.setPrecio(precio);
         
@@ -89,6 +93,6 @@ public class NuevoMaterial {
         stAñadirNuevoMaterial.setString(3, this.getTipoMaterial());
         stAñadirNuevoMaterial.setDouble(4, this.getPrecio());
         boolean n = stAñadirNuevoMaterial.execute();
-        System.out.println("Tabla añadida!");
+        System.out.println("Material añadido!");
     }
 }

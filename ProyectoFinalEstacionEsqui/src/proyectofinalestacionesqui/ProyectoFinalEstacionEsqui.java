@@ -5,13 +5,10 @@
  */
 package proyectofinalestacionesqui;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -21,22 +18,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.sql.Timestamp;
-import java.sql.Types;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import static java.util.Calendar.HOUR;
 import java.util.Date;
-import static jdk.nashorn.internal.runtime.regexp.joni.constants.TokenType.INTERVAL;
 
 /**
- *
+ * Clase principal del proyecto
  * @author Yann
  */
 public class ProyectoFinalEstacionEsqui {
 
     /**
+     * Programa principal
      * @param args the command line arguments
      */
     public static void main(String[] args) {
@@ -108,8 +102,6 @@ public class ProyectoFinalEstacionEsqui {
         }    
     }
 
-    
-    
     /**
      * Con este metodo creamos los usuarios, en este metodo ultizamos los metodos 
      * comprobarDni(dni) y comprobarFechaNacimiento(fechaNacimiento) para comprobar
@@ -402,14 +394,13 @@ public class ProyectoFinalEstacionEsqui {
         if(opcionAlta.toLowerCase().equals("si")){
             //Autentificamos al usuario y nos devuelve su id
             int idCliente = autentificarUsuario();
-            
-            //Comprobamos que el usuario este de alta
             Connection con = establecerConexion();
-            PreparedStatement stComprUs = con.prepareStatement("select id, nombre, apellidos from clientes where id = ?");
-            stComprUs.setInt(1, idCliente); 
-            ResultSet rsComprUs = stComprUs.executeQuery();
-            //Si hay resultados es que el usuario esta dado de alta
-            if (rsComprUs.next()){
+            if(idCliente!=0){
+                //Buscamos la info del cliente
+                PreparedStatement stComprUs = con.prepareStatement("select id, nombre, apellidos from clientes where id = ?");
+                stComprUs.setInt(1, idCliente); 
+                ResultSet rsComprUs = stComprUs.executeQuery();
+                rsComprUs.next();
                 //Insertamos en la tabla intermedia forfait_cliente los datos necesarios para que quede registro de la compra del forfait
                 String insertaClienteForfait = "INSERT INTO forfait_cliente VALUES (?, ?, NOW(), ?)";
                 PreparedStatement stInsertaClienteForfait = con.prepareStatement(insertaClienteForfait);
@@ -431,16 +422,15 @@ public class ProyectoFinalEstacionEsqui {
                 imprForfTick(strTipoForfait, rsComprUs, precioForfait);
 
                 //Cerramos st y rs
-                stInsertaClienteForfait.close();
-                rsBuscPrecForf.close();
+                if (rsBuscPrecForf!= null) rsBuscPrecForf.close (); //cierra el objeto ResultSet llamado rsBuscPrecForf
+                if (stInsertaClienteForfait!= null) stInsertaClienteForfait.close ();//cierra el objeto Statement llamado stInsertaClienteForfait
+                if (rsComprUs!= null) rsComprUs.close (); //cierra el objeto ResultSet llamado rsComprUs
+                if (stComprUs!= null) stComprUs.close ();//cierra el objeto Statement llamado stComprUs
             }
-            //Si no da resultados es que no esta en la base de datos, imprimimos mensaje informando
+            //Si autentificarUsuario() nos devuelve 0 es que no ha encontrado al usuario
             else{
-                System.out.println("Parece ser que tu usuario no esta registrado");
+                System.out.println("No te has identificado correctamente");
             }
-
-            if (rsComprUs!= null) rsComprUs.close (); //cierra el objeto ResultSet llamado rsComprUs
-            if (stComprUs!= null) stComprUs.close ();//cierra el objeto Statement llamado stComprUs
             if (con!= null) con.close (); //cierra el objeto Connection llamado con
         }
         //Si nos indica que no esta dado de alta mostramos mensaje
@@ -667,6 +657,14 @@ public class ProyectoFinalEstacionEsqui {
         return idCliente;
     }
 
+    /**
+     * Una vez tenemos el material que vamos a alquilar con alquilarMaterial() lo enviamos a buscarAlquilarMaterial().
+     * Que se encarga de hacer los cambios en la base de datos y imprimir ticket. En caso que no exista material para esa talla o queden disponibles se informa. 
+     * @param material objeto con informacion sobre el material que queremos alquilar
+     * @param idCliente id del cliente que va a alquilar
+     * @param diasAlquilerMaterial dias que alquilaremos el material
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
+     */
     public static void buscarAlquilarMaterial(Material material, int idCliente, int diasAlquilerMaterial) throws SQLException {
         //Buscamos que el material este en la base de datos
         Connection con = establecerConexion();
@@ -726,28 +724,7 @@ public class ProyectoFinalEstacionEsqui {
                     System.out.println("Precio: "+(precioMaterialEncontrado*diasAlquilerMaterial)+"€");
                     
                     stBuscarMaterialImpr.close();
-                    rsBuscarMaterialImpr.close();
-                    /*
-                    //opcion1
-                    //Imprimimos tiket
-                    ResultSet rsDevolverValoresInsertados = stGuarMatCli.getGeneratedKeys();
-                    if(rsDevolverValoresInsertados.next()){
-                        //n=rs.getString("id");
-                        Timestamp fechaHoraInicio = rsDevolverValoresInsertados.getTimestamp("fecha_hora_inicio");
-                        System.out.println(fechaHoraInicio);
-                        System.out.println("\n---- Ticket ----");
-                    }
-                    
-                    
-                    //opcion2
-                    CallableStatement callStmt = con.prepareCall(strGuarMatCli);
-                    callStmt.registerOutParameter(5, Types.TIMESTAMP);
-                    int updateCnt = callStmt.executeUpdate();
-                    Timestamp fechaHoraInicio2 = callStmt.getTimestamp(1);
-                    System.out.println("The id of the inserted row is: " + fechaHoraInicio2);
-                    */
-                    
-                    
+                    rsBuscarMaterialImpr.close();               
                 } catch (SQLException ex) {
                     System.out.println("SQLSTATE " + ex.getSQLState() + " SQLMESSAGE " + ex.getMessage());
                     System.out.println("Hago rollback");
@@ -777,7 +754,7 @@ public class ProyectoFinalEstacionEsqui {
     
     /**
      * Metodo cuya función es que el cliente pueda devolver el material. Pedimos el id del material, comprobamos que este pendiente de devolver y devolvemos, si el cliente se retrasa con la devolución tendrá que pagar una multa. 
-     * @throws SQLException 
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
      */
     public static void devolverMaterial() throws SQLException{
         Scanner lector = new Scanner(System.in);
@@ -855,7 +832,7 @@ public class ProyectoFinalEstacionEsqui {
         }
         //Si no encuentra el id del material o si esta disponible imprimimos mensaje
         else{
-            System.out.println("No se ha encontrado el id del material");
+            System.out.println("No se ha encontrado el id del material o ya ha sido devuelto");
         }
         stBuscarMaterial.close();
         rsBuscarMaterial.close();
@@ -866,7 +843,7 @@ public class ProyectoFinalEstacionEsqui {
      * @param con objeto Connection necesario para realizar la conexion con la base de datos
      * @param idMaterial id del material al que vamos a aplicar la devolucion
      * @param horaActual hora actual para imprimir en el ticket
-     * @throws SQLException 
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
      */
     public static void aplicarDevolucionMaterial(Connection con, String idMaterial, String horaActual) throws SQLException {
         String strPasarDisp = "UPDATE material SET disponibilidad = true WHERE id = ?";
@@ -880,6 +857,11 @@ public class ProyectoFinalEstacionEsqui {
         stPasarDisp.close();
     }
     
+    /**
+     * Método para imprimir toda la info de las pistas. Pistas abiertas por colores, temperatura etc.
+     * @param color le pasamos un objeto con los colores de texto, lo usamos para pintar texto
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
+     */
     public static void consultarInfoPistas(ColorTexto color) throws SQLException{
         //Generamos un array de objetos a partir de la info de pistas de la BD
         ArrayList<Pista> arrayPistas = generarObjPistasConBD();
@@ -901,32 +883,32 @@ public class ProyectoFinalEstacionEsqui {
             if(arrayPistas.get(i).isPistaAbierta()==false){pistaAbierta="no";}
             
             //Miramos de que color es la pista aumentamos contadores y añadimos color al texto que despues completaremos y imprimiremos (strInfoPistas)
-            if(arrayPistas.get(i).getNivel().equals("AZUL")){
-                pistasAzulesTotales++;
-                strInfoPistas += color.getTextoAzul();
-                if(arrayPistas.get(i).isPistaAbierta()==true){
-                    pistasAzulesTotalesAbiertas++;
-                }
-            }
-            else if(arrayPistas.get(i).getNivel().equals("VERDE")){
-                pistasVerdesTotales++;
-                strInfoPistas += color.getTextoVerde();
-                if(arrayPistas.get(i).isPistaAbierta()==true){
-                    pistasVerdesTotalesAbiertas++;
-                }
-            }
-            else if(arrayPistas.get(i).getNivel().equals("ROJA")){
-                pistasRojasTotales++;
-                strInfoPistas += color.getTextoRojo();
-                if(arrayPistas.get(i).isPistaAbierta()==true){
-                    pistasRojasTotalesAbiertas++;
-                }
-            }
-            else if(arrayPistas.get(i).getNivel().equals("NEGRA")){
-                pistasNegrasTotales++;
-                if(arrayPistas.get(i).isPistaAbierta()==true){
-                    pistasNegrasTotalesAbiertas++;
-                }
+            switch (arrayPistas.get(i).getNivel()) {
+                case "AZUL":
+                    pistasAzulesTotales++;
+                    strInfoPistas += color.getTextoAzul();
+                    if(arrayPistas.get(i).isPistaAbierta()==true){
+                        pistasAzulesTotalesAbiertas++;
+                    }   break;
+                case "VERDE":
+                    pistasVerdesTotales++;
+                    strInfoPistas += color.getTextoVerde();
+                    if(arrayPistas.get(i).isPistaAbierta()==true){
+                        pistasVerdesTotalesAbiertas++;
+                    }   break;
+                case "ROJA":
+                    pistasRojasTotales++;
+                    strInfoPistas += color.getTextoRojo();
+                    if(arrayPistas.get(i).isPistaAbierta()==true){
+                        pistasRojasTotalesAbiertas++;
+                    }   break;
+                case "NEGRA":
+                    pistasNegrasTotales++;
+                    if(arrayPistas.get(i).isPistaAbierta()==true){
+                        pistasNegrasTotalesAbiertas++;
+                    }   break;
+                default:
+                    break;
             }
             //Completamos la info ampliada de la pista que estamos recorriendo
             strInfoPistas += "\nNombre pista: "+arrayPistas.get(i).getNombre()+". Nivel: "+arrayPistas.get(i).getNivel()+". Pista abierta: "+pistaAbierta+". Altura inicio: "+arrayPistas.get(i).getAlturaInicio()+". Altura fin: "+arrayPistas.get(i).getAlturaFin()+". Temperatura: "+arrayPistas.get(i).getTemp()+color.getReset();
@@ -943,6 +925,11 @@ public class ProyectoFinalEstacionEsqui {
         System.out.println(strInfoPistas);
     }
 
+    /**
+     * Con este método creamos un array de objetos con la información de las pistas que tenemos en la base de datos y lo retornamos.
+     * @return nos devuelve un array de Pista con todas las pistas y su informacion, la misma que esta en la base de datos
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
+     */
     public static ArrayList<Pista> generarObjPistasConBD() throws SQLException {
         Connection con = establecerConexion();
         ArrayList<Pista> arrayPistas = new ArrayList<Pista>();
@@ -962,6 +949,12 @@ public class ProyectoFinalEstacionEsqui {
         return arrayPistas;
     }
     
+    /**
+     * Con este método podemos indicar nuestro nivel (principiante, intermedio, experto) y nos mostrara las pistas que podemos coger.
+     * Además, se muestran de manera que podemos elegir una ruta uniendo varias pistas
+     * @param color le pasamos un objeto con los colores de texto, lo usamos para pintar texto
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
+     */
     public static void consultarRutasPorDificultad(ColorTexto color) throws SQLException{
         ArrayList<Pista> arrayPistas = generarObjPistasConBD();
         Scanner lector = new Scanner(System.in);
@@ -987,78 +980,82 @@ public class ProyectoFinalEstacionEsqui {
         }
         System.out.println("\n----Tus pistas----");
         for (int i = 0; i < arrayPistas.size(); i++) {
-            if(arrayPistas.get(i).getNivel().equals(nivelPista1) || arrayPistas.get(i).getNivel().equals(nivelPista2)){
+            if( ( arrayPistas.get(i).getNivel().equals(nivelPista1) || arrayPistas.get(i).getNivel().equals(nivelPista2) ) && arrayPistas.get(i).isPistaAbierta() ){
                 String nombrePista = "";
                 String alturaInicio = "";
                 String alturaFin = "";
-                if(arrayPistas.get(i).getNivel().equals("AZUL")){
-                    nombrePista = color.getTextoAzul()+arrayPistas.get(i).getNombre()+color.getReset();
-                }
-                else if(arrayPistas.get(i).getNivel().equals("VERDE")){
-                    nombrePista = color.getTextoVerde()+arrayPistas.get(i).getNombre()+color.getReset();
-                }
-                else if(arrayPistas.get(i).getNivel().equals("ROJA")){
-                    nombrePista = color.getTextoRojo()+arrayPistas.get(i).getNombre()+color.getReset();
-                }
-                else if(arrayPistas.get(i).getNivel().equals("NEGRA")){
-                    nombrePista = arrayPistas.get(i).getNombre();
-                }
-                
-                if(arrayPistas.get(i).getAlturaInicio()==2000){
-                    alturaInicio =color.getTextoBlancoFondoMorado()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
-                }
-                else if(arrayPistas.get(i).getAlturaInicio()==1500){
-                    alturaInicio =color.getTextoBlancoFondoRojo()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
-                }
-                else if(arrayPistas.get(i).getAlturaInicio()==1000){
-                    alturaInicio =color.getTextoBlancoFondoAzul()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
-                }
-                else if(arrayPistas.get(i).getAlturaInicio()==500){
-                    alturaInicio =color.getTextoBlancoFondoAzulCyan()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
-                }
-                else if(arrayPistas.get(i).getAlturaInicio()==0){
-                    alturaInicio =color.getTextoBlancoFondoAmarillo()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
+                switch (arrayPistas.get(i).getNivel()) {
+                    case "AZUL":
+                        nombrePista = color.getTextoAzul()+arrayPistas.get(i).getNombre()+color.getReset();
+                        break;
+                    case "VERDE":
+                        nombrePista = color.getTextoVerde()+arrayPistas.get(i).getNombre()+color.getReset();
+                        break;
+                    case "ROJA":
+                        nombrePista = color.getTextoRojo()+arrayPistas.get(i).getNombre()+color.getReset();
+                        break;
+                    case "NEGRA":
+                        nombrePista = arrayPistas.get(i).getNombre();
+                        break;
+                    default:
+                        break;
                 }
                 
-                if(arrayPistas.get(i).getAlturaFin()==2000){
-                    alturaFin =color.getTextoBlancoFondoMorado()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
+                switch (arrayPistas.get(i).getAlturaInicio()) {
+                    case 2000:
+                        alturaInicio =color.getTextoBlancoFondoMorado()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
+                        break;
+                    case 1500:
+                        alturaInicio =color.getTextoBlancoFondoRojo()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
+                        break;
+                    case 1000:
+                        alturaInicio =color.getTextoBlancoFondoAzul()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
+                        break;
+                    case 500:
+                        alturaInicio =color.getTextoBlancoFondoAzulCyan()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
+                        break;
+                    case 0:
+                        alturaInicio =color.getTextoBlancoFondoAmarillo()+" Altura inicio "+arrayPistas.get(i).getAlturaInicio()+" "+color.getReset();
+                        break;
+                    default:
+                        break;
                 }
-                else if(arrayPistas.get(i).getAlturaFin()==1500){
-                    alturaFin =color.getTextoBlancoFondoRojo()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
-                }
-                else if(arrayPistas.get(i).getAlturaFin()==1000){
-                    alturaFin =color.getTextoBlancoFondoAzul()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
-                }
-                else if(arrayPistas.get(i).getAlturaFin()==500){
-                    alturaFin =color.getTextoBlancoFondoAzulCyan()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
-                }
-                else if(arrayPistas.get(i).getAlturaFin()==0){
-                    alturaFin =color.getTextoBlancoFondoAmarillo()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
+                
+                switch (arrayPistas.get(i).getAlturaFin()) {
+                    case 2000:
+                        alturaFin =color.getTextoBlancoFondoMorado()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
+                        break;
+                    case 1500:
+                        alturaFin =color.getTextoBlancoFondoRojo()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
+                        break;
+                    case 1000:
+                        alturaFin =color.getTextoBlancoFondoAzul()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
+                        break;
+                    case 500:
+                        alturaFin =color.getTextoBlancoFondoAzulCyan()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
+                        break;
+                    case 0:
+                        alturaFin =color.getTextoBlancoFondoAmarillo()+" Altura fin "+arrayPistas.get(i).getAlturaFin()+" "+color.getReset();
+                        break;
+                    default:
+                        break;
                 }
                         
                 System.out.println("\n------------------\n"+nombrePista+"\n------------------\n"+alturaInicio+" "+alturaFin+"\n------------------");
-                //System.out.println("Pista "+arrayPistas.get(i).getNombre()+". Altura inicio "+arrayPistas.get(i).getAlturaInicio()+". Altura fin "+arrayPistas.get(i).getAlturaFin()+"("+arrayPistas.get(i).getNivel()+")");
             }
         }
-        
-        /*for (int i = 0; i < arrayPistas.size(); i++) {
-            if(arrayPistas.get(i).getAlturaInicio()==2000 && (arrayPistas.get(i).getNivel().equals(nivelPista1) || arrayPistas.get(i).getNivel().equals(nivelPista2))){
-                System.out.println("Baja por "+arrayPistas.get(i).getNombre()+" a 2000 metros hasta"+arrayPistas.get(i).getNombre()+ ("+arrayPistas.get(i).getNivel()+")");
-                if(arrayPistas.get(i).getAlturaFin()==1500){
-                    for (int j = 0; j < arrayPistas.size(); j++) {
-                        if(arrayPistas.get(j).getAlturaInicio()==1500 && (arrayPistas.get(j).getNivel().equals(nivelPista1) || arrayPistas.get(j).getNivel().equals(nivelPista2))){
-                            System.out.println("Puedes seguir por "+arrayPistas.get(j).getNombre()+" a 1500 metros ("+arrayPistas.get(j).getNivel()+")");
-                        }
-                    } 
-                }
-            }
-        }*/
     }
     
+    /**
+     * Este método sirve para mostrar el menú de tareas de mantenimiento y que cuando elijas una opción te mande a su respectivo método.
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
+     */
     public static void tareasMantenimiento() throws SQLException{
         Scanner lector = new Scanner(System.in);
+        System.out.println("\n----Tareas de mantenimiento----");
         System.out.println("1- Cambiar informacion de pistas");
         System.out.println("2- Agregar nuevo material de esqui/snow");
+        System.out.println("Dime una opcion");
         int opcion = lector.nextInt();
         switch(opcion){
             case 1:
@@ -1073,10 +1070,14 @@ public class ProyectoFinalEstacionEsqui {
         }
     }
     
+    /**
+     * Con este metodo solicitamos el nombre de una pista y cambiamos su temperatura y si esta abierta o cerrada
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
+     */
     public static void cambiarInfoPistas() throws SQLException{
         Scanner lector = new Scanner(System.in);
         //Recogemos el nombre de la pista para hacer cambios en ella
-        System.out.println("----Cambiar informacion de pistas----");
+        System.out.println("\n----Cambiar informacion de pistas----");
         System.out.println("Dime el nombre de la pista");
         String nombrePista = lector.nextLine();
         
@@ -1109,33 +1110,13 @@ public class ProyectoFinalEstacionEsqui {
         if (con!= null) con.close (); //cierra el objeto Connection llamado con*/
     }
     
+    /**
+     * Con este método creamos un objeto tipo NuevoMaterial y se lo pasamos al método añadirMaterialNuevoDB() en la clase NuevoMaterial que se encarga de rellenar el objeto NuevoMaterial con los datos que vamos rellenando y luego plasmarlo en la base de datos
+     * @throws SQLException Excepcion producida por un fallo relacionado con la base de datos
+     */
     public static void añadirNuevoMaterial() throws SQLException{
         //Creamos un nuevo objeto NuevoMaterial y lo pasamos a el metodo añadirMaterialNuevoDB(), que recoje los datos, los guarda en el objeto y los inserta en la BD
         NuevoMaterial nm1 = new NuevoMaterial();
         nm1.añadirMaterialNuevoDB();
     }
 }
-
-     
-
-/*//Parte en la que introducimos la informacion en la BD
-        Connection con = establecerConexion();
-        PreparedStatement usuarios = null;
-        String insertaCliente = "INSERT INTO clientes (dni, nombre, apellidos, fecha_nacimiento) VALUES (?, ?, ?, str_to_date(?,'%d/%m/%Y'))";
-        try{   
-            usuarios = con.prepareStatement(insertaCliente);
-            con.setAutoCommit(false);
-            usuarios.setString(1,usuario.getDni());
-            usuarios.setString(2,usuario.getNombre());
-            usuarios.setString(3,usuario.getApellidos());
-            usuarios.setString(4,usuario.getFecha_nacimiento());
-            boolean n = usuarios.execute();
-            con.commit();
-        } catch (SQLException ex) {
-            System.out.println("SQLSTATE " + ex.getSQLState() + "SQLMESSAGE" +             ex.getMessage());
-            System.out.println("Hago rollback");
-            con.rollback();  
-        } finally{
-            con.setAutoCommit(true);
-            usuarios.close();
-        }*/

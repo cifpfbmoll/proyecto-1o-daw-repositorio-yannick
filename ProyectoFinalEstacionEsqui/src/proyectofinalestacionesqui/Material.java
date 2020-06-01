@@ -6,7 +6,7 @@
 package proyectofinalestacionesqui;
 
 /**
- *
+ * Esta clase se encarga de construir el objeto Material, utilizado para guardar informacion sobre un material que se quiere alquilar
  * @author Yann
  */
 public class Material {
